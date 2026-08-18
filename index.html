@@ -4,9 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Farm Log</title>
-<script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -271,13 +270,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div><!-- end .app -->
 
 <script>
-// ── Firebase init ─────────────────────────────────────
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// ── Connection indicator ──────────────────────────────
-db.ref('.info/connected').on('value', snap => {
-  const on = snap.val();
+// ── Sync indicator (uses a Supabase realtime channel just to know
+// whether the socket is connected — no data flows through this) ──────
+const statusChannel = supabase.channel('worker-app-presence').subscribe(status => {
+  const on = status === 'SUBSCRIBED';
   document.getElementById('syncDot').className = 'sync-dot' + (on ? '' : ' offline');
   document.getElementById('syncStatus').textContent = on ? 'Connected' : 'Offline';
 });
@@ -298,12 +294,14 @@ function init(){
 
 // ── data helpers ──────────────────────────────────────
 async function getGroups(){
-  const s = await db.ref('groups').once('value');
-  return s.val() ? Object.values(s.val()) : [];
+  const { data, error } = await supabase.from('groups').select('*');
+  if(error){ console.error(error); return []; }
+  return data || [];
 }
 async function getWorkers(){
-  const s = await db.ref('workers').once('value');
-  return s.val() ? Object.values(s.val()) : [];
+  const { data, error } = await supabase.from('workers').select('*');
+  if(error){ console.error(error); return []; }
+  return data || [];
 }
 
 // ── GROUP SELECT ──────────────────────────────────────
@@ -345,7 +343,7 @@ function verifyPin(){
 }
 
 async function renderWorkerList(){
-  const workers = (await getWorkers()).filter(w => w.groupId === activeGroup.id);
+  const workers = (await getWorkers()).filter(w => w.group_id === activeGroup.id);
   const list    = document.getElementById('workerList');
   const none    = document.getElementById('noWorkers');
   if(!workers.length){ list.innerHTML=''; none.classList.remove('hidden'); return; }
@@ -458,7 +456,16 @@ async function submitLog(farm){
   }
 
   try {
-    await db.ref('logs/'+log.id).set(log);
+    const { error } = await supabase.from('logs').insert({
+      id: log.id,
+      date: log.date,
+      farm: log.farm,
+      group_id: log.groupId,
+      worker_id: log.workerId,
+      deaths: log.deaths || 0,
+      payload: log
+    });
+    if(error) throw error;
     lastReceipt = log;
     showReceipt(log);
   } catch(e){
@@ -560,4 +567,4 @@ function startOver(){
 init();
 </script>
 </body>
-  </html>
+</html>
