@@ -4,13 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Farm Log</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --green:#16a34a;--green2:#15803d;--navy:#0f2744;--amber:#d97706;--rose:#be185d;
-  --red:#dc2626;--slate:#64748b;--bg:#f0fdf4;--card:#fff;--border:#e2e8f0;--text:#0f172a;
-}
+:root{--green:#16a34a;--green2:#15803d;--navy:#0f2744;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f0fdf4;--card:#fff;--border:#e2e8f0;--text:#0f172a}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
 .app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:30px}
 .header{background:linear-gradient(135deg,var(--green),var(--green2));padding:24px 20px 20px;color:#fff}
@@ -38,7 +36,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .worker-item{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:2px solid var(--border);border-radius:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s}
 .worker-item:active{border-color:var(--green);background:#dcfce7;transform:scale(0.98)}
 .avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}
-.worker-name-lbl{font-weight:700;font-size:1rem}
+.worker-name{font-weight:700;font-size:1rem}
 .worker-sub{font-size:0.78rem;color:var(--slate);margin-top:2px}
 .w-arrow{font-size:1.4rem;color:#94a3b8}
 .farm-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -87,10 +85,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="app">
 
 <div class="header">
-  <div class="header-top">
-    <div class="header-icon">🌿</div>
-    <h1>Farm Log</h1>
-  </div>
+  <div class="header-top"><div class="header-icon">🌿</div><h1>Farm Log</h1></div>
   <div class="header-sub" id="headerDate">Loading…</div>
   <div class="sync-indicator"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connecting…</span></div>
 </div>
@@ -121,9 +116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="welcome"><h2>Who's logging today?</h2><p>Tap your name to start</p></div>
   <div style="padding:0 18px" id="workerList"></div>
   <div id="noWorkers" class="empty-state hidden">No workers in this group yet.</div>
-  <div style="padding:0 18px 14px">
-    <button class="btn btn-secondary" onclick="backToGroups()">← Change Group</button>
-  </div>
+  <div style="padding:0 18px 14px"><button class="btn btn-secondary" onclick="backToGroups()">← Change Group</button></div>
 </div>
 
 <!-- SCREEN 4: FARM SELECT -->
@@ -145,89 +138,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
   <!-- CHICKEN FORM -->
   <div id="form-chicken" class="hidden">
-    <div class="card">
-      <div class="section-label">🐔 Birds Count</div>
-      <div class="form-group"><div class="form-label">Number of Birds Met Today *</div><input type="number" class="form-input" id="c_birds" placeholder="e.g. 200"></div>
-    </div>
-    <div class="card">
-      <div class="section-label">🥚 Egg Collection</div>
+    <div class="card"><div class="section-label">🐔 Birds Count</div><div class="form-group"><div class="form-label">Number of Birds Met Today *</div><input type="number" class="form-input" id="c_birds" placeholder="e.g. 200"></div></div>
+    <div class="card"><div class="section-label">🥚 Egg Collection</div>
       <div class="form-group"><div class="form-label">Good Eggs</div><div class="stepper"><button class="step-btn" onclick="adj('c_good',-1)">−</button><span class="step-val" id="c_good_d">0</span><button class="step-btn" onclick="adj('c_good',1)">+</button></div><input type="hidden" id="c_good" value="0"></div>
-      <div class="two-col">
-        <div class="form-group"><div class="form-label">Cracked</div><div class="stepper"><button class="step-btn" onclick="adj('c_cracked',-1)">−</button><span class="step-val" id="c_cracked_d">0</span><button class="step-btn" onclick="adj('c_cracked',1)">+</button></div><input type="hidden" id="c_cracked" value="0"></div>
-        <div class="form-group"><div class="form-label">Shelless</div><div class="stepper"><button class="step-btn" onclick="adj('c_shelless',-1)">−</button><span class="step-val" id="c_shelless_d">0</span><button class="step-btn" onclick="adj('c_shelless',1)">+</button></div><input type="hidden" id="c_shelless" value="0"></div>
-      </div>
+      <div class="two-col"><div class="form-group"><div class="form-label">Cracked</div><div class="stepper"><button class="step-btn" onclick="adj('c_cracked',-1)">−</button><span class="step-val" id="c_cracked_d">0</span><button class="step-btn" onclick="adj('c_cracked',1)">+</button></div><input type="hidden" id="c_cracked" value="0"></div><div class="form-group"><div class="form-label">Shelless</div><div class="stepper"><button class="step-btn" onclick="adj('c_shelless',-1)">−</button><span class="step-val" id="c_shelless_d">0</span><button class="step-btn" onclick="adj('c_shelless',1)">+</button></div><input type="hidden" id="c_shelless" value="0"></div></div>
       <div class="form-group"><div class="form-label">Found Broken</div><div class="stepper"><button class="step-btn" onclick="adj('c_broken',-1)">−</button><span class="step-val" id="c_broken_d">0</span><button class="step-btn" onclick="adj('c_broken',1)">+</button></div><input type="hidden" id="c_broken" value="0"></div>
     </div>
-    <div class="card">
-      <div class="section-label">📦 Egg Sales</div>
-      <div class="form-group"><div class="form-label">Crates Sold</div><input type="number" class="form-input" id="c_crates" placeholder="0" step="0.5"></div>
-      <div class="form-group"><div class="form-label">Amount Received (₦)</div><input type="number" class="form-input" id="c_revenue" placeholder="0"></div>
-    </div>
-    <div class="card">
-      <div class="section-label">🌾 Feed & Water</div>
+    <div class="card"><div class="section-label">📦 Egg Sales</div><div class="form-group"><div class="form-label">Crates Sold</div><input type="number" class="form-input" id="c_crates" placeholder="0" step="0.5"></div><div class="form-group"><div class="form-label">Amount Received (₦)</div><input type="number" class="form-input" id="c_revenue" placeholder="0"></div></div>
+    <div class="card"><div class="section-label">🌾 Feed & Water</div>
       <div class="form-group"><div class="form-label">Feed Intake (grams) *</div><input type="number" class="form-input" id="c_feed" placeholder="e.g. 2500"></div>
       <div class="form-group"><div class="form-label">💊 Treatment for Feed</div><select class="form-input" id="c_feedTreatment"><option value="">-- None --</option><option>Treatment 1</option><option>Treatment 2</option><option>Treatment 3</option><option>Treatment 4</option><option>Treatment 5</option></select></div>
       <div class="form-group"><div class="form-label">Water Intake (litres) *</div><input type="number" class="form-input" id="c_water" placeholder="e.g. 40" step="0.1"></div>
       <div class="form-group"><div class="form-label">💊 Treatment for Water</div><select class="form-input" id="c_waterTreatment"><option value="">-- None --</option><option>Treatment 1</option><option>Treatment 2</option><option>Treatment 3</option><option>Treatment 4</option><option>Treatment 5</option></select></div>
     </div>
-    <div class="card">
-      <div class="section-label">💀 Mortality</div>
-      <div class="form-group"><div class="form-label">Number of Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('c_deaths',-1)">−</button><span class="step-val" id="c_deaths_d">0</span><button class="step-btn" onclick="adj('c_deaths',1)">+</button></div><input type="hidden" id="c_deaths" value="0"></div>
-      <div class="form-group"><div class="form-label">Cause (optional)</div><input type="text" class="form-input" id="c_cause" placeholder="e.g. Heat stress"></div>
-    </div>
+    <div class="card"><div class="section-label">💀 Mortality</div><div class="form-group"><div class="form-label">Number of Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('c_deaths',-1)">−</button><span class="step-val" id="c_deaths_d">0</span><button class="step-btn" onclick="adj('c_deaths',1)">+</button></div><input type="hidden" id="c_deaths" value="0"></div><div class="form-group"><div class="form-label">Cause (optional)</div><input type="text" class="form-input" id="c_cause" placeholder="e.g. Heat stress"></div></div>
     <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('chicken')">✅ Submit Chicken Log</button></div>
   </div>
 
   <!-- RABBIT FORM -->
   <div id="form-rabbit" class="hidden">
-    <div class="card">
-      <div class="section-label">🐇 Animals Met Today</div>
-      <div class="two-col">
-        <div class="form-group"><div class="form-label">Males</div><input type="number" class="form-input" id="r_male" placeholder="0"></div>
-        <div class="form-group"><div class="form-label">Females</div><input type="number" class="form-input" id="r_female" placeholder="0"></div>
-      </div>
-      <div class="two-col">
-        <div class="form-group"><div class="form-label">Weaners</div><input type="number" class="form-input" id="r_weaners" placeholder="0"></div>
-        <div class="form-group"><div class="form-label">Kits</div><input type="number" class="form-input" id="r_kits" placeholder="0"></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-label">🌾 Feed & Water</div>
+    <div class="card"><div class="section-label">🐇 Animals Met Today</div><div class="two-col"><div class="form-group"><div class="form-label">Males</div><input type="number" class="form-input" id="r_male" placeholder="0"></div><div class="form-group"><div class="form-label">Females</div><input type="number" class="form-input" id="r_female" placeholder="0"></div></div><div class="two-col"><div class="form-group"><div class="form-label">Weaners</div><input type="number" class="form-input" id="r_weaners" placeholder="0"></div><div class="form-group"><div class="form-label">Kits</div><input type="number" class="form-input" id="r_kits" placeholder="0"></div></div></div>
+    <div class="card"><div class="section-label">🌾 Feed & Water</div>
       <div class="form-group"><div class="form-label">Feed Type *</div><div class="chip-group"><span class="chip" id="chip-growers" onclick="pickRabbitFeed('Growers')">Growers</span><span class="chip" id="chip-forage" onclick="pickRabbitFeed('Forage')">Forage</span></div><input type="hidden" id="r_feedtype"></div>
       <div class="form-group"><div class="form-label">Feed Intake (grams) *</div><input type="number" class="form-input" id="r_feed" placeholder="e.g. 800"></div>
       <div class="form-group"><div class="form-label">💊 Treatment for Feed</div><select class="form-input" id="r_feedTreatment"><option value="">-- None --</option><option>Treatment 1</option><option>Treatment 2</option><option>Treatment 3</option><option>Treatment 4</option><option>Treatment 5</option></select></div>
       <div class="form-group"><div class="form-label">Water Intake (litres) *</div><input type="number" class="form-input" id="r_water" placeholder="e.g. 5" step="0.1"></div>
       <div class="form-group"><div class="form-label">💊 Treatment for Water</div><select class="form-input" id="r_waterTreatment"><option value="">-- None --</option><option>Treatment 1</option><option>Treatment 2</option><option>Treatment 3</option><option>Treatment 4</option><option>Treatment 5</option></select></div>
     </div>
-    <div class="card">
-      <div class="section-label">⚖️ Weekly Weight</div>
+    <div class="card"><div class="section-label">⚖️ Weekly Weight</div>
       <div class="form-group"><div class="form-label">Average Weight (kg)</div><input type="number" class="form-input" id="r_weight" placeholder="e.g. 1.50" step="0.01"></div>
       <div class="form-group"><div class="form-label">Week Number</div><input type="number" class="form-input" id="r_weeknum" placeholder="e.g. 6"></div>
       <div class="form-group"><div class="form-label">💊 Treatment for Weight</div><select class="form-input" id="r_weightTreatment"><option value="">-- None --</option><option>Treatment 1</option><option>Treatment 2</option><option>Treatment 3</option><option>Treatment 4</option><option>Treatment 5</option></select></div>
     </div>
-    <div class="card">
-      <div class="section-label">🐣 Litters & Kits Born</div>
-      <div class="form-group"><div class="form-label">New Litters</div><div class="stepper"><button class="step-btn" onclick="adj('r_litters',-1)">−</button><span class="step-val" id="r_litters_d">0</span><button class="step-btn" onclick="adj('r_litters',1)">+</button></div><input type="hidden" id="r_litters" value="0"></div>
-      <div class="form-group"><div class="form-label">New Kits Born</div><div class="stepper"><button class="step-btn" onclick="adj('r_newkits',-1)">−</button><span class="step-val" id="r_newkits_d">0</span><button class="step-btn" onclick="adj('r_newkits',1)">+</button></div><input type="hidden" id="r_newkits" value="0"></div>
-    </div>
-    <div class="card">
-      <div class="section-label">💰 Rabbits Sold</div>
-      <div class="form-group"><div class="form-label">Number Sold</div><div class="stepper"><button class="step-btn" onclick="adj('r_sold',-1)">−</button><span class="step-val" id="r_sold_d">0</span><button class="step-btn" onclick="adj('r_sold',1)">+</button></div><input type="hidden" id="r_sold" value="0"></div>
-    </div>
-    <div class="card">
-      <div class="section-label">❤️ Mating</div>
-      <div class="form-group"><div class="form-label">Date of Mating (if today)</div><input type="date" class="form-input" id="r_mating"></div>
-    </div>
-    <div class="card">
-      <div class="section-label">💀 Mortality — specify by category</div>
-      <div class="two-col">
-        <div class="form-group"><div class="form-label">Male Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dmale',-1)">−</button><span class="step-val" id="r_dmale_d">0</span><button class="step-btn" onclick="adj('r_dmale',1)">+</button></div><input type="hidden" id="r_dmale" value="0"></div>
-        <div class="form-group"><div class="form-label">Female Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dfemale',-1)">−</button><span class="step-val" id="r_dfemale_d">0</span><button class="step-btn" onclick="adj('r_dfemale',1)">+</button></div><input type="hidden" id="r_dfemale" value="0"></div>
-      </div>
-      <div class="two-col">
-        <div class="form-group"><div class="form-label">Weaner Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dweaners',-1)">−</button><span class="step-val" id="r_dweaners_d">0</span><button class="step-btn" onclick="adj('r_dweaners',1)">+</button></div><input type="hidden" id="r_dweaners" value="0"></div>
-        <div class="form-group"><div class="form-label">Kit Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dkits',-1)">−</button><span class="step-val" id="r_dkits_d">0</span><button class="step-btn" onclick="adj('r_dkits',1)">+</button></div><input type="hidden" id="r_dkits" value="0"></div>
-      </div>
+    <div class="card"><div class="section-label">🐣 Litters & Kits Born</div><div class="form-group"><div class="form-label">New Litters</div><div class="stepper"><button class="step-btn" onclick="adj('r_litters',-1)">−</button><span class="step-val" id="r_litters_d">0</span><button class="step-btn" onclick="adj('r_litters',1)">+</button></div><input type="hidden" id="r_litters" value="0"></div><div class="form-group"><div class="form-label">New Kits Born</div><div class="stepper"><button class="step-btn" onclick="adj('r_newkits',-1)">−</button><span class="step-val" id="r_newkits_d">0</span><button class="step-btn" onclick="adj('r_newkits',1)">+</button></div><input type="hidden" id="r_newkits" value="0"></div></div>
+    <div class="card"><div class="section-label">💰 Rabbits Sold</div><div class="form-group"><div class="form-label">Number Sold</div><div class="stepper"><button class="step-btn" onclick="adj('r_sold',-1)">−</button><span class="step-val" id="r_sold_d">0</span><button class="step-btn" onclick="adj('r_sold',1)">+</button></div><input type="hidden" id="r_sold" value="0"></div></div>
+    <div class="card"><div class="section-label">❤️ Mating</div><div class="form-group"><div class="form-label">Date of Mating (if today)</div><input type="date" class="form-input" id="r_mating"></div></div>
+    <div class="card"><div class="section-label">💀 Mortality — specify by category</div>
+      <div class="two-col"><div class="form-group"><div class="form-label">Male Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dmale',-1)">−</button><span class="step-val" id="r_dmale_d">0</span><button class="step-btn" onclick="adj('r_dmale',1)">+</button></div><input type="hidden" id="r_dmale" value="0"></div><div class="form-group"><div class="form-label">Female Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dfemale',-1)">−</button><span class="step-val" id="r_dfemale_d">0</span><button class="step-btn" onclick="adj('r_dfemale',1)">+</button></div><input type="hidden" id="r_dfemale" value="0"></div></div>
+      <div class="two-col"><div class="form-group"><div class="form-label">Weaner Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dweaners',-1)">−</button><span class="step-val" id="r_dweaners_d">0</span><button class="step-btn" onclick="adj('r_dweaners',1)">+</button></div><input type="hidden" id="r_dweaners" value="0"></div><div class="form-group"><div class="form-label">Kit Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('r_dkits',-1)">−</button><span class="step-val" id="r_dkits_d">0</span><button class="step-btn" onclick="adj('r_dkits',1)">+</button></div><input type="hidden" id="r_dkits" value="0"></div></div>
       <div class="form-group" style="margin-top:4px"><div class="form-label">Cause (optional)</div><input type="text" class="form-input" id="r_cause" placeholder="e.g. Respiratory illness"></div>
     </div>
     <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('rabbit')">✅ Submit Rabbit Log</button></div>
@@ -253,325 +201,336 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div><!-- end .app -->
 
 <script>
-/* ═══════════════════════════════════════════════════════════
-   SUPABASE CONFIG – EDIT THESE TWO LINES ONLY
-   ═══════════════════════════════════════════════════════════ */
-const SUPABASE_URL = 'https://lrocighnjtundvcxvhar.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyb2NpZ2huanR1bmR2Y3h2aGFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMzk0MTQsImV4cCI6MjEwMjYxNTQxNH0.w8fmLmbs6M4HMUG5e--eSpNynLs3BDSvwT8ZIZR9i50';
-/* ═══════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════
+// FIREBASE CONFIG – REPLACE WITH YOUR OWN
+// ═══════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
+  authDomain: "farm-appp-4f7f6.firebaseapp.com",
+  projectId: "farm-appp-4f7f6",
+  storageBucket: "farm-appp-4f7f6.firebasestorage.app",
+  messagingSenderId: "637677324102",
+  appId: "1:637677324102:web:f564617ac59012909c0747",
+  measurementId: "G-1QTPB6MSVV"
+};
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-// Check if config is present
-if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('PASTE')) {
-  alert('Supabase anon key not configured. Open the HTML and replace PASTE_YOUR_ANON_KEY_HERE.');
-}
+// ── State ────────────────────────────────────────────
+var activeGroup = null, activeWorker = null, activeFarm = null;
+var lastReceipt = null;
 
-// ── state ─────────────────────────────────────────────
-var activeGroup  = null;
-var activeWorker = null;
-var activeFarm   = null;
-var lastReceipt  = null;
-
-// ── init ─────────────────────────────────────────────
-function init(){
+// ── Init ─────────────────────────────────────────────
+function init() {
   document.getElementById('headerDate').textContent =
-    new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   document.getElementById('r_mating').value = new Date().toISOString().split('T')[0];
+
+  // Real-time listeners
+  db.ref('groups').on('value', snap => renderGroupList());
+  db.ref('workers').on('value', snap => {
+    if (activeGroup && !document.getElementById('screen-workers').classList.contains('hidden'))
+      renderWorkerList();
+  });
   renderGroupList();
 }
 
-// ── data helpers ──────────────────────────────────────
-async function getGroups(){
-  const { data, error } = await supabase.from('groups').select('*');
-  if(error){ console.error(error); return []; }
-  return data || [];
-}
-async function getWorkers(){
-  const { data, error } = await supabase.from('workers').select('*');
-  if(error){ console.error(error); return []; }
-  return data || [];
-}
-
-// ── GROUP SELECT ──────────────────────────────────────
-async function renderGroupList(){
-  const groups = await getGroups();
-  const list   = document.getElementById('groupList');
-  const none   = document.getElementById('noGroups');
-  if(!groups.length){ list.innerHTML=''; none.classList.remove('hidden'); return; }
-  none.classList.add('hidden');
-  list.innerHTML = groups.map((g,i) =>
-    `<div class="group-select-item slide-in" style="animation-delay:${i*0.08}s" onclick="selectGroup('${g.id}','${encodeURIComponent(g.name)}','${g.pin}')">
-      <div class="group-sel-icon">${g.name.charAt(0)}</div>
-      <div style="flex:1"><div style="font-weight:700">${g.name}</div><div style="font-size:0.75rem;color:var(--slate)">Tap to log your entry</div></div>
-      <div style="font-size:1.2rem;color:#94a3b8">›</div>
-    </div>`).join('');
+// ── Render functions ─────────────────────────────────
+function renderGroupList() {
+  db.ref('groups').once('value').then(snap => {
+    const groups = snap.val() ? Object.values(snap.val()) : [];
+    const list = document.getElementById('groupList');
+    const none = document.getElementById('noGroups');
+    if (!groups.length) {
+      list.innerHTML = '';
+      none.classList.remove('hidden');
+      return;
+    }
+    none.classList.add('hidden');
+    list.innerHTML = groups.map((g, i) =>
+      `<div class="group-select-item slide-in" style="animation-delay:${i * 0.08}s" onclick="selectGroup('${g.id}','${g.name}')">
+        <div class="group-sel-icon">${g.name.charAt(0)}</div>
+        <div style="flex:1"><div style="font-weight:700">${g.name}</div><div style="font-size:0.75rem;color:var(--slate)">Tap to log your entry</div></div>
+        <div style="font-size:1.2rem;color:#94a3b8">›</div>
+      </div>`
+    ).join('');
+  });
 }
 
-function selectGroup(id, encodedName, pin){
-  const name = decodeURIComponent(encodedName);
-  activeGroup = { id, name, pin };
-  document.getElementById('pinGroupName').textContent = name;
-  document.getElementById('pinInput').value = '';
-  show('screen-pin');
+function selectGroup(id, name) {
+  db.ref('groups').once('value').then(snap => {
+    const groups = snap.val();
+    const group = groups ? Object.values(groups).find(g => g.id === id) : null;
+    if (!group) return;
+    activeGroup = group;
+    document.getElementById('pinGroupName').textContent = name;
+    document.getElementById('pinInput').value = '';
+    show('screen-pin');
+  });
 }
 
-function verifyPin(){
-  const entered  = document.getElementById('pinInput').value;
-  const correct  = activeGroup.pin;
-  if(entered === correct){
+function verifyPin() {
+  const entered = document.getElementById('pinInput').value;
+  const correct = activeGroup.pin || '1234';
+  if (entered === correct) {
     renderWorkerList();
     show('screen-workers');
     document.getElementById('lockedGroupBadge').textContent = activeGroup.name;
   } else {
     document.getElementById('pinInput').value = '';
-    document.getElementById('pinInput').style.borderColor = 'var(--red)';
-    setTimeout(() => document.getElementById('pinInput').style.borderColor = '', 1200);
     alert('Incorrect PIN. Try again.');
   }
 }
 
-async function renderWorkerList(){
-  const workers = (await getWorkers()).filter(w => w.group_id === activeGroup.id);
-  const list    = document.getElementById('workerList');
-  const none    = document.getElementById('noWorkers');
-  if(!workers.length){ list.innerHTML=''; none.classList.remove('hidden'); return; }
-  none.classList.add('hidden');
-  list.innerHTML = workers.map((w,i) =>
-    `<div class="worker-item slide-in" style="animation-delay:${i*0.08}s" onclick="pickWorker('${w.id}','${encodeURIComponent(w.name)}','${w.initials}')">
-      <div class="avatar">${w.initials}</div>
-      <div style="flex:1"><div class="worker-name-lbl">${w.name}</div><div class="worker-sub">Tap to start logging</div></div>
-      <div class="w-arrow">›</div>
-    </div>`).join('');
+function renderWorkerList() {
+  db.ref('workers').once('value').then(snap => {
+    const workers = snap.val() ? Object.values(snap.val()).filter(w => w.groupId === activeGroup.id) : [];
+    const list = document.getElementById('workerList');
+    const none = document.getElementById('noWorkers');
+    if (!workers.length) { list.innerHTML = ''; none.classList.remove('hidden'); return; }
+    none.classList.add('hidden');
+    list.innerHTML = workers.map((w, i) =>
+      `<div class="worker-item slide-in" style="animation-delay:${i * 0.08}s" onclick="pickWorker('${w.id}','${w.name}','${w.initials}')">
+        <div class="avatar">${w.initials}</div>
+        <div style="flex:1"><div class="worker-name">${w.name}</div><div class="worker-sub">Tap to start logging</div></div>
+        <div class="w-arrow">›</div>
+      </div>`
+    ).join('');
+  });
 }
 
-function pickWorker(id, encodedName, initials){
-  activeWorker = { id, name: decodeURIComponent(encodedName), initials };
+function pickWorker(id, name, initials) {
+  activeWorker = { id, name, initials };
   show('screen-farm');
 }
 
-function pickFarm(farm){
+function pickFarm(farm) {
   activeFarm = farm;
   document.querySelectorAll('.farm-card').forEach(c => c.classList.remove('sel'));
-  document.getElementById('fc-'+farm).classList.add('sel');
+  document.getElementById('fc-' + farm).classList.add('sel');
   setTimeout(() => {
     document.getElementById('workerBanner').textContent =
-      `👤 ${activeWorker.name} · ${farm==='chicken'?'🐔 Chicken':'🐇 Rabbit'} · ${activeGroup.name}`;
-    document.getElementById('form-chicken').classList.toggle('hidden', farm!=='chicken');
-    document.getElementById('form-rabbit').classList.toggle('hidden',  farm!=='rabbit');
+      '👤 ' + activeWorker.name + ' · ' + (farm === 'chicken' ? '🐔 Chicken' : '🐇 Rabbit') + ' · ' + activeGroup.name;
+    document.getElementById('form-chicken').classList.toggle('hidden', farm !== 'chicken');
+    document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
     show('screen-log');
   }, 200);
 }
 
-function pickRabbitFeed(type){
+function pickRabbitFeed(type) {
   document.getElementById('r_feedtype').value = type;
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  document.getElementById('chip-'+type.toLowerCase()).classList.add('active');
+  document.getElementById('chip-' + type.toLowerCase()).classList.add('active');
 }
 
-function adj(id, delta){
+function adj(id, delta) {
   const inp = document.getElementById(id);
-  const v   = Math.max(0, (parseInt(inp.value)||0) + delta);
+  const v = Math.max(0, (parseInt(inp.value) || 0) + delta);
   inp.value = v;
-  document.getElementById(id+'_d').textContent = v;
+  document.getElementById(id + '_d').textContent = v;
 }
 
-// ── SUBMIT ────────────────────────────────────────────
-async function submitLog(farm){
-  if(farm==='chicken'){
-    if(!document.getElementById('c_birds').value){ alert('Enter number of birds met'); return; }
-    if(!document.getElementById('c_feed').value){  alert('Enter feed intake'); return; }
-    if(!document.getElementById('c_water').value){ alert('Enter water intake'); return; }
+// ── Submit log ───────────────────────────────────────
+function submitLog(farm) {
+  if (farm === 'chicken') {
+    if (!document.getElementById('c_birds').value) { alert('Enter number of birds met'); return; }
+    if (!document.getElementById('c_feed').value) { alert('Enter feed intake'); return; }
+    if (!document.getElementById('c_water').value) { alert('Enter water intake'); return; }
   } else {
-    if(!document.getElementById('r_feedtype').value){ alert('Select feed type'); return; }
-    if(!document.getElementById('r_feed').value){    alert('Enter feed intake'); return; }
-    if(!document.getElementById('r_water').value){   alert('Enter water intake'); return; }
+    if (!document.getElementById('r_feedtype').value) { alert('Select feed type'); return; }
+    if (!document.getElementById('r_feed').value) { alert('Enter feed intake'); return; }
+    if (!document.getElementById('r_water').value) { alert('Enter water intake'); return; }
   }
 
-  document.getElementById('loadingOverlay').classList.remove('hidden');
-
   const log = {
-    id: 'L'+Date.now(),
+    id: 'L' + Date.now(),
     date: new Date().toISOString(),
     farm,
-    groupId:    activeGroup.id,
-    groupName:  activeGroup.name,
-    workerId:   activeWorker.id,
+    groupId: activeGroup.id,
+    groupName: activeGroup.name,
+    workerId: activeWorker.id,
     workerName: activeWorker.name
   };
 
-  if(farm==='chicken'){
-    Object.assign(log,{
-      birds:           parseInt(document.getElementById('c_birds').value)||0,
-      eggsGood:        parseInt(document.getElementById('c_good').value)||0,
-      eggsCracked:     parseInt(document.getElementById('c_cracked').value)||0,
-      eggsShelless:    parseInt(document.getElementById('c_shelless').value)||0,
-      eggsBroken:      parseInt(document.getElementById('c_broken').value)||0,
-      cratesSold:      parseFloat(document.getElementById('c_crates').value)||0,
-      cratesRevenue:   parseFloat(document.getElementById('c_revenue').value)||0,
-      feedGrams:       parseFloat(document.getElementById('c_feed').value)||0,
-      feedTreatment:   document.getElementById('c_feedTreatment').value,
-      waterLitres:     parseFloat(document.getElementById('c_water').value)||0,
-      waterTreatment:  document.getElementById('c_waterTreatment').value,
-      deaths:          parseInt(document.getElementById('c_deaths').value)||0,
-      cause:           document.getElementById('c_cause').value
-    });
+  if (farm === 'chicken') {
+    log.birds = parseInt(document.getElementById('c_birds').value) || 0;
+    log.eggsGood = parseInt(document.getElementById('c_good').value) || 0;
+    log.eggsCracked = parseInt(document.getElementById('c_cracked').value) || 0;
+    log.eggsShelless = parseInt(document.getElementById('c_shelless').value) || 0;
+    log.eggsBroken = parseInt(document.getElementById('c_broken').value) || 0;
+    log.cratesSold = parseFloat(document.getElementById('c_crates').value) || 0;
+    log.cratesRevenue = parseFloat(document.getElementById('c_revenue').value) || 0;
+    log.feedGrams = parseFloat(document.getElementById('c_feed').value) || 0;
+    log.waterLitres = parseFloat(document.getElementById('c_water').value) || 0;
+    log.deaths = parseInt(document.getElementById('c_deaths').value) || 0;
+    log.cause = document.getElementById('c_cause').value;
+    log.feedTreatment = document.getElementById('c_feedTreatment').value;
+    log.waterTreatment = document.getElementById('c_waterTreatment').value;
   } else {
-    const dm=parseInt(document.getElementById('r_dmale').value)||0;
-    const df=parseInt(document.getElementById('r_dfemale').value)||0;
-    const dw=parseInt(document.getElementById('r_dweaners').value)||0;
-    const dk=parseInt(document.getElementById('r_dkits').value)||0;
-    Object.assign(log,{
-      rMale:          parseInt(document.getElementById('r_male').value)||0,
-      rFemale:        parseInt(document.getElementById('r_female').value)||0,
-      rWeaners:       parseInt(document.getElementById('r_weaners').value)||0,
-      rKits:          parseInt(document.getElementById('r_kits').value)||0,
-      feedType:       document.getElementById('r_feedtype').value,
-      feedGrams:      parseFloat(document.getElementById('r_feed').value)||0,
-      feedTreatment:  document.getElementById('r_feedTreatment').value,
-      waterLitres:    parseFloat(document.getElementById('r_water').value)||0,
-      waterTreatment: document.getElementById('r_waterTreatment').value,
-      weight:         parseFloat(document.getElementById('r_weight').value)||null,
-      weekNum:        parseInt(document.getElementById('r_weeknum').value)||null,
-      weightTreatment:document.getElementById('r_weightTreatment').value,
-      litters:        parseInt(document.getElementById('r_litters').value)||0,
-      newKits:        parseInt(document.getElementById('r_newkits').value)||0,
-      rabbitsSold:    parseInt(document.getElementById('r_sold').value)||0,
-      matingDate:     document.getElementById('r_mating').value||null,
-      dMale:dm, dFemale:df, dWeaners:dw, dKits:dk,
-      deaths:         dm+df+dw+dk,
-      cause:          document.getElementById('r_cause').value
-    });
+    const dM = parseInt(document.getElementById('r_dmale').value) || 0;
+    const dF = parseInt(document.getElementById('r_dfemale').value) || 0;
+    const dW = parseInt(document.getElementById('r_dweaners').value) || 0;
+    const dK = parseInt(document.getElementById('r_dkits').value) || 0;
+    log.rMale = parseInt(document.getElementById('r_male').value) || 0;
+    log.rFemale = parseInt(document.getElementById('r_female').value) || 0;
+    log.rWeaners = parseInt(document.getElementById('r_weaners').value) || 0;
+    log.rKits = parseInt(document.getElementById('r_kits').value) || 0;
+    log.feedType = document.getElementById('r_feedtype').value;
+    log.feedGrams = parseFloat(document.getElementById('r_feed').value) || 0;
+    log.waterLitres = parseFloat(document.getElementById('r_water').value) || 0;
+    log.litters = parseInt(document.getElementById('r_litters').value) || 0;
+    log.newKits = parseInt(document.getElementById('r_newkits').value) || 0;
+    log.rabbitsSold = parseInt(document.getElementById('r_sold').value) || 0;
+    log.weight = parseFloat(document.getElementById('r_weight').value) || null;
+    log.weekNum = parseInt(document.getElementById('r_weeknum').value) || null;
+    log.matingDate = document.getElementById('r_mating').value || null;
+    log.dMale = dM; log.dFemale = dF; log.dWeaners = dW; log.dKits = dK;
+    log.deaths = dM + dF + dW + dK;
+    log.cause = document.getElementById('r_cause').value;
+    log.feedTreatment = document.getElementById('r_feedTreatment').value;
+    log.waterTreatment = document.getElementById('r_waterTreatment').value;
+    log.weightTreatment = document.getElementById('r_weightTreatment').value;
   }
 
-  try {
-    const { error } = await supabase.from('logs').insert({
-      id: log.id,
-      date: log.date,
-      farm: log.farm,
-      group_id: log.groupId,
-      worker_id: log.workerId,
-      deaths: log.deaths || 0,
-      payload: log
-    });
-    if(error) throw error;
+  db.ref('logs').push(log).then(() => {
     lastReceipt = log;
     showReceipt(log);
-  } catch(e){
-    alert('Failed to save. Check your connection and try again.');
-    console.error(e);
-  } finally {
-    document.getElementById('loadingOverlay').classList.add('hidden');
-  }
+  });
 }
 
-// ── RECEIPT ───────────────────────────────────────────
-function showReceipt(log){
-  const dt      = new Date(log.date);
-  const dateStr = dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-  const timeStr = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  const isC     = log.farm === 'chicken';
+// ── Receipt ──────────────────────────────────────────
+function showReceipt(log) {
+  const dt = new Date(log.date);
+  const dateStr = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const isC = log.farm === 'chicken';
+  let body = '';
 
-  const rr = (label,val,cls) =>
-    `<div class="receipt-row"><span class="receipt-label">${label}</span><span class="receipt-val ${cls||''}">${val}</span></div>`;
-  const rg = (title,rows) =>
-    `<div class="receipt-group"><div class="receipt-group-title">${title}</div>${rows}</div>`;
-
-  let body = rg('📅 Info',
-    rr('Date',dateStr)+rr('Time',timeStr)+rr('Group',log.groupName)+
-    rr('Worker',log.workerName)+rr('Farm',isC?'Chicken Farm':'Rabbit Farm')+
-    rr('Entry ID',`<span style="font-size:0.72rem;font-family:monospace">${log.id}</span>`));
-
-  if(isC){
-    body += rg('🐔 Birds & Inputs',
-      rr('Birds Met',log.birds)+rr('Feed',log.feedGrams+'g')+(log.feedTreatment?rr('Feed Treatment',log.feedTreatment):'')+
-      rr('Water',log.waterLitres+'L')+(log.waterTreatment?rr('Water Treatment',log.waterTreatment):''));
-    body += rg('🥚 Eggs',
-      rr('Good',''+log.eggsGood,'highlight')+rr('Cracked',log.eggsCracked)+
-      rr('Shelless',log.eggsShelless)+rr('Broken',log.eggsBroken));
-    body += rg('📦 Sales',
-      rr('Crates Sold',log.cratesSold)+rr('Amount','₦'+Number(log.cratesRevenue).toLocaleString(),'highlight'));
-    body += rg('💀 Mortality',
-      rr('Deaths',''+log.deaths,log.deaths>0?'danger':'')+(log.cause?rr('Cause',log.cause):''));
+  if (isC) {
+    body = `
+      <div class="receipt-group"><div class="receipt-group-title">🐔 Birds</div>
+        <div class="receipt-row"><span class="receipt-label">Birds Met</span><span class="receipt-val">${log.birds}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Feed</span><span class="receipt-val">${log.feedGrams}g</span></div>
+        ${log.feedTreatment ? `<div class="receipt-row"><span class="receipt-label">Feed Treatment</span><span class="receipt-val">${log.feedTreatment}</span></div>` : ''}
+        <div class="receipt-row"><span class="receipt-label">Water</span><span class="receipt-val">${log.waterLitres}L</span></div>
+        ${log.waterTreatment ? `<div class="receipt-row"><span class="receipt-label">Water Treatment</span><span class="receipt-val">${log.waterTreatment}</span></div>` : ''}
+      </div>
+      <div class="receipt-group"><div class="receipt-group-title">🥚 Eggs</div>
+        <div class="receipt-row"><span class="receipt-label">Good</span><span class="receipt-val highlight">${log.eggsGood}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Cracked</span><span class="receipt-val">${log.eggsCracked}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Shelless</span><span class="receipt-val">${log.eggsShelless}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Broken</span><span class="receipt-val">${log.eggsBroken}</span></div>
+      </div>
+      <div class="receipt-group"><div class="receipt-group-title">📦 Sales</div>
+        <div class="receipt-row"><span class="receipt-label">Crates</span><span class="receipt-val">${log.cratesSold}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Amount</span><span class="receipt-val highlight">₦${Number(log.cratesRevenue).toLocaleString()}</span></div>
+      </div>
+      <div class="receipt-group"><div class="receipt-group-title">💀 Mortality</div>
+        <div class="receipt-row"><span class="receipt-label">Deaths</span><span class="receipt-val${log.deaths > 0 ? ' danger' : ''}">${log.deaths}</span></div>
+        ${log.cause ? `<div class="receipt-row"><span class="receipt-label">Cause</span><span class="receipt-val">${log.cause}</span></div>` : ''}
+      </div>`;
   } else {
-    body += rg('🐇 Animals',
-      rr('Males',log.rMale)+rr('Females',log.rFemale)+rr('Weaners',log.rWeaners)+rr('Kits',log.rKits));
-    body += rg('🌾 Feed & Water',
-      rr('Type',log.feedType)+rr('Feed',log.feedGrams+'g')+(log.feedTreatment?rr('Feed Treatment',log.feedTreatment):'')+
-      rr('Water',log.waterLitres+'L')+(log.waterTreatment?rr('Water Treatment',log.waterTreatment):''));
-    if(log.weight) body += rg('⚖️ Weight',
-      rr('Avg Weight',log.weight+'kg')+rr('Week',log.weekNum||'—')+(log.weightTreatment?rr('Weight Treatment',log.weightTreatment):''));
-    body += rg('🐣 Reproduction',
-      rr('New Litters',log.litters)+rr('New Kits',log.newKits)+(log.matingDate?rr('Mating Date',log.matingDate):''));
-    body += rg('💰 Sales', rr('Rabbits Sold',log.rabbitsSold));
-    body += rg('💀 Mortality',
-      rr('Male Deaths',log.dMale)+rr('Female Deaths',log.dFemale)+
-      rr('Weaner Deaths',log.dWeaners)+rr('Kit Deaths',log.dKits)+
-      rr('Total Deaths',''+log.deaths,log.deaths>0?'danger':'')+(log.cause?rr('Cause',log.cause):''));
+    body = `
+      <div class="receipt-group"><div class="receipt-group-title">🐇 Animals</div>
+        <div class="receipt-row"><span class="receipt-label">Males</span><span class="receipt-val">${log.rMale}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Females</span><span class="receipt-val">${log.rFemale}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Weaners</span><span class="receipt-val">${log.rWeaners}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Kits</span><span class="receipt-val">${log.rKits}</span></div>
+      </div>
+      <div class="receipt-group"><div class="receipt-group-title">🌾 Feed & Treatments</div>
+        <div class="receipt-row"><span class="receipt-label">Type</span><span class="receipt-val">${log.feedType}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Intake</span><span class="receipt-val">${log.feedGrams}g</span></div>
+        ${log.feedTreatment ? `<div class="receipt-row"><span class="receipt-label">Feed Treatment</span><span class="receipt-val">${log.feedTreatment}</span></div>` : ''}
+        <div class="receipt-row"><span class="receipt-label">Water</span><span class="receipt-val">${log.waterLitres}L</span></div>
+        ${log.waterTreatment ? `<div class="receipt-row"><span class="receipt-label">Water Treatment</span><span class="receipt-val">${log.waterTreatment}</span></div>` : ''}
+      </div>
+      ${log.weight ? `
+      <div class="receipt-group"><div class="receipt-group-title">⚖️ Weight</div>
+        <div class="receipt-row"><span class="receipt-label">Avg Weight</span><span class="receipt-val">${log.weight}kg</span></div>
+        <div class="receipt-row"><span class="receipt-label">Week</span><span class="receipt-val">${log.weekNum}</span></div>
+        ${log.weightTreatment ? `<div class="receipt-row"><span class="receipt-label">Weight Treatment</span><span class="receipt-val">${log.weightTreatment}</span></div>` : ''}
+      </div>` : ''}
+      <div class="receipt-group"><div class="receipt-group-title">🐣 Reproduction</div>
+        <div class="receipt-row"><span class="receipt-label">Litters</span><span class="receipt-val">${log.litters}</span></div>
+        <div class="receipt-row"><span class="receipt-label">New Kits</span><span class="receipt-val">${log.newKits}</span></div>
+        ${log.matingDate ? `<div class="receipt-row"><span class="receipt-label">Mating</span><span class="receipt-val">${log.matingDate}</span></div>` : ''}
+      </div>
+      <div class="receipt-group"><div class="receipt-group-title">💰 Sales</div>
+        <div class="receipt-row"><span class="receipt-label">Sold</span><span class="receipt-val">${log.rabbitsSold}</span></div>
+      </div>
+      <div class="receipt-group"><div class="receipt-group-title">💀 Mortality</div>
+        <div class="receipt-row"><span class="receipt-label">Male</span><span class="receipt-val">${log.dMale}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Female</span><span class="receipt-val">${log.dFemale}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Weaner</span><span class="receipt-val">${log.dWeaners}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Kit</span><span class="receipt-val">${log.dKits}</span></div>
+        ${log.cause ? `<div class="receipt-row"><span class="receipt-label">Cause</span><span class="receipt-val">${log.cause}</span></div>` : ''}
+      </div>`;
   }
 
-  document.getElementById('receiptCard').innerHTML =
-    `<div class="receipt-header"><div class="receipt-header-icon">${isC?'🐔':'🐇'}</div>
-      <h2>Log Submitted</h2><div class="receipt-header-sub">${log.groupName} · ${log.workerName}</div></div>
-    <div class="receipt-body">${body}</div>
+  document.getElementById('receiptCard').innerHTML = `
+    <div class="receipt-header">
+      <div class="receipt-header-icon">${isC ? '🐔' : '🐇'}</div>
+      <h2>Log Submitted</h2>
+      <div class="receipt-header-sub">${activeGroup.name} · ${activeWorker.name}</div>
+    </div>
+    <div class="receipt-body">
+      <div class="receipt-group">
+        <div class="receipt-group-title">📅 Info</div>
+        <div class="receipt-row"><span class="receipt-label">Date</span><span class="receipt-val">${dateStr}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Time</span><span class="receipt-val">${timeStr}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Group</span><span class="receipt-val">${log.groupName}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Worker</span><span class="receipt-val">${log.workerName}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Farm</span><span class="receipt-val">${isC ? 'Chicken' : 'Rabbit'}</span></div>
+        <div class="receipt-row"><span class="receipt-label">ID</span><span class="receipt-val" style="font-size:0.72rem;font-family:monospace">${log.id}</span></div>
+      </div>
+      ${body}
+    </div>
     <div class="receipt-footer">
       <div style="font-weight:600;margin-bottom:4px">Entry locked — cannot be modified</div>
-      <div>Report any errors to your supervisor</div>
-      <div class="receipt-stamp">✅ Saved to Database</div>
+      <div class="receipt-stamp">✅ Verified & Saved</div>
     </div>`;
-
   show('screen-receipt');
 }
 
-function notifySupervisor(){
-  const msg = encodeURIComponent('Good day sir, these are the activities that occurred on the farm today. Please check the dashboard.');
-  window.open('https://wa.me/2348132146857?text='+msg, '_blank');
+// ── Helpers ──────────────────────────────────────────
+function show(screenId) {
+  ['screen-group', 'screen-pin', 'screen-workers', 'screen-farm', 'screen-log', 'screen-receipt'].forEach(s =>
+    document.getElementById(s).classList.toggle('hidden', s !== screenId)
+  );
 }
 
-// ── nav helpers ───────────────────────────────────────
-function show(id){
-  ['screen-group','screen-pin','screen-workers','screen-farm','screen-log','screen-receipt']
-    .forEach(s => document.getElementById(s).classList.toggle('hidden', s!==id));
+function backToGroups() {
+  activeGroup = null; activeWorker = null; activeFarm = null;
+  renderGroupList();
+  show('screen-group');
 }
-function backToGroups(){ activeGroup=null; activeWorker=null; activeFarm=null; renderGroupList(); show('screen-group'); }
-function backToWorkers(){ activeWorker=null; activeFarm=null; show('screen-workers'); }
-function backToFarm(){ activeFarm=null; show('screen-farm'); }
+function backToWorkers() { activeWorker = null; activeFarm = null; show('screen-workers'); }
+function backToFarm() { activeFarm = null; show('screen-farm'); }
 
-function startOver(){
-  ['c_birds','c_crates','c_revenue','c_feed','c_water','c_cause',
-   'r_male','r_female','r_weaners','r_kits','r_feed','r_water','r_weight','r_weeknum','r_cause']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  ['c_good','c_cracked','c_shelless','c_broken','c_deaths',
-   'r_litters','r_newkits','r_sold','r_dmale','r_dfemale','r_dweaners','r_dkits']
-    .forEach(id=>{ const el=document.getElementById(id); if(el){ el.value=0; const d=document.getElementById(id+'_d'); if(d) d.textContent='0'; }});
+function startOver() {
+  ['c_birds','c_crates','c_revenue','c_feed','c_water','c_cause','r_male','r_female','r_weaners','r_kits','r_feed','r_water','r_weight','r_weeknum','r_cause'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['c_good','c_cracked','c_shelless','c_broken','c_deaths','r_litters','r_newkits','r_sold','r_dmale','r_dfemale','r_dweaners','r_dkits'].forEach(id => {
+    const el = document.getElementById(id); if (el) { el.value = 0; const d = document.getElementById(id + '_d'); if (d) d.textContent = '0'; }
+  });
   document.getElementById('r_feedtype').value = '';
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   document.getElementById('r_mating').value = new Date().toISOString().split('T')[0];
-  ['c_feedTreatment','c_waterTreatment','r_feedTreatment','r_waterTreatment','r_weightTreatment']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['c_feedTreatment','c_waterTreatment','r_feedTreatment','r_waterTreatment','r_weightTreatment'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   activeFarm = null;
   show('screen-farm');
 }
 
-init();
-
-// ── Sync indicator (best-effort only) ──
-try {
-  const syncTimeout = setTimeout(() => {
-    document.getElementById('syncDot').className = 'sync-dot offline';
-    document.getElementById('syncStatus').textContent = 'Offline';
-  }, 8000);
-
-  supabase.channel('worker-app-presence').subscribe(status => {
-    clearTimeout(syncTimeout);
-    const on = status === 'SUBSCRIBED';
-    document.getElementById('syncDot').className = 'sync-dot' + (on ? '' : ' offline');
-    document.getElementById('syncStatus').textContent = on ? 'Connected' : 'Offline';
-  });
-} catch (e) {
-  document.getElementById('syncDot').className = 'sync-dot offline';
-  document.getElementById('syncStatus').textContent = 'Offline';
+function notifySupervisor() {
+  const message = encodeURIComponent("Good day sir, these are the activities that occurred on the farm today. Please check the dashboard.");
+  window.open('https://wa.me/2348132146857?text=' + message, '_blank');
 }
+
+init();
 </script>
 </body>
 </html>
