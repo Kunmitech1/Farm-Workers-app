@@ -8,7 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--green:#16a34a;--green2:#15803d;--navy:#0f2744;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f0fdf4;--card:#fff;--border:#e2e8f0;--text:#0f172a}
+:root{--green:#16a34a;--green2:#15803d;--navy:#0f2744;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f0fdf4;--card:#fff;--border:#e2e8f0;--text:#0f172a;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
 .app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:30px}
 .header{background:linear-gradient(135deg,var(--green),var(--green2));padding:24px 20px 20px;color:#fff}
@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="form-group"><div class="form-label">Week Number</div><input type="number" class="form-input" id="r_weeknum" placeholder="e.g. 6"></div>
       <div class="form-group"><div class="form-label">💊 Treatment for Weight</div><select class="form-input" id="r_weightTreatment"><option value="">-- None --</option><option>Treatment 1</option><option>Treatment 2</option><option>Treatment 3</option><option>Treatment 4</option><option>Treatment 5</option></select></div>
     </div>
-    <!-- Mating Section (Optional, date empty by default) -->
+    <!-- Mating Section (Optional) -->
     <div class="card">
       <div class="section-label">❤️ Mating (Optional)</div>
       <div class="form-group"><div class="form-label">Date of Mating</div><input type="date" class="form-input" id="r_mating"></div>
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="form-group"><div class="form-label">Delivery Date</div><input type="date" class="form-input" id="r_delivery_date"></div>
       <div class="form-group"><div class="form-label">Expected at Birth</div><input type="number" class="form-input" id="r_expected_birth" placeholder="0"></div>
     </div>
-    <!-- Litters & Kits Born (Optional) moved after mating -->
+    <!-- Litters & Kits Born (Optional) -->
     <div class="card">
       <div class="section-label">🐣 Litters & Kits Born (Optional)</div>
       <div class="form-group"><div class="form-label">New Litters</div>
@@ -256,6 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <input type="hidden" id="r_newkits" value="0">
       </div>
     </div>
+    <!-- Rabbits Sold (Optional) -->
     <div class="card">
       <div class="section-label">💰 Rabbits Sold (Optional)</div>
       <div class="form-group"><div class="form-label">Number Sold</div>
@@ -265,6 +266,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <button class="step-btn" onclick="adj('r_sold',1)">+</button>
         </div>
         <input type="hidden" id="r_sold" value="0">
+      </div>
+    </div>
+    <!-- 🛒 Rabbits Bought (Optional) -->
+    <div class="card">
+      <div class="section-label">🛒 Rabbits Bought (Optional)</div>
+      <div class="two-col">
+        <div class="form-group">
+          <div class="form-label">Adult Males Bought</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="adj('r_bought_adult_male',-1)">−</button>
+            <input type="number" class="step-val" id="r_bought_adult_male_d" value="0" min="0" inputmode="numeric">
+            <button class="step-btn" onclick="adj('r_bought_adult_male',1)">+</button>
+          </div>
+          <input type="hidden" id="r_bought_adult_male" value="0">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Adult Females Bought</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="adj('r_bought_adult_female',-1)">−</button>
+            <input type="number" class="step-val" id="r_bought_adult_female_d" value="0" min="0" inputmode="numeric">
+            <button class="step-btn" onclick="adj('r_bought_adult_female',1)">+</button>
+          </div>
+          <input type="hidden" id="r_bought_adult_female" value="0">
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <div class="form-label">Weaners Bought</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="adj('r_bought_weaners',-1)">−</button>
+            <input type="number" class="step-val" id="r_bought_weaners_d" value="0" min="0" inputmode="numeric">
+            <button class="step-btn" onclick="adj('r_bought_weaners',1)">+</button>
+          </div>
+          <input type="hidden" id="r_bought_weaners" value="0">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Kits Bought</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="adj('r_bought_kits',-1)">−</button>
+            <input type="number" class="step-val" id="r_bought_kits_d" value="0" min="0" inputmode="numeric">
+            <button class="step-btn" onclick="adj('r_bought_kits',1)">+</button>
+          </div>
+          <input type="hidden" id="r_bought_kits" value="0">
+        </div>
       </div>
     </div>
     <!-- Mortality (Required) -->
@@ -501,7 +546,7 @@ function submitLog(farm) {
     log.cratesRevenue = parseFloat(document.getElementById('c_revenue').value) || 0;
     log.deaths = parseInt(document.getElementById('c_deaths_d').value) || 0;
     log.cause = document.getElementById('c_cause').value;
-    // No feed/water for chicken anymore
+    // No feed/water for chicken
   } else {
     log.rMale = parseInt(document.getElementById('r_male').value) || 0;
     log.rFemale = parseInt(document.getElementById('r_female').value) || 0;
@@ -514,7 +559,7 @@ function submitLog(farm) {
     log.deaths = log.dMale + log.dFemale + log.dWeaners + log.dKits;
     log.cause = document.getElementById('r_cause').value;
 
-    // Optional fields
+    // Optional feed/water
     log.feedType = document.getElementById('r_feedtype').value;
     log.feedGrams = parseFloat(document.getElementById('r_feed').value) || 0;
     log.feedTreatment = document.getElementById('r_feedTreatment').value;
@@ -537,6 +582,12 @@ function submitLog(farm) {
 
     // Rabbits sold optional
     log.rabbitsSold = parseInt(document.getElementById('r_sold_d').value) || 0;
+
+    // Rabbits bought optional
+    log.boughtAdultMale = parseInt(document.getElementById('r_bought_adult_male_d').value) || 0;
+    log.boughtAdultFemale = parseInt(document.getElementById('r_bought_adult_female_d').value) || 0;
+    log.boughtWeaners = parseInt(document.getElementById('r_bought_weaners_d').value) || 0;
+    log.boughtKits = parseInt(document.getElementById('r_bought_kits_d').value) || 0;
   }
 
   db.ref('logs').push(log).then(() => {
@@ -574,6 +625,13 @@ function showReceipt(log) {
   } else {
     body += rg('🐇 Animals Met',
       rr('Males',log.rMale)+rr('Females',log.rFemale)+rr('Weaners',log.rWeaners)+rr('Kits',log.rKits));
+
+    // Bought section
+    body += rg('🛒 Rabbits Bought',
+      rr('Adult Males Bought',log.boughtAdultMale||0)+
+      rr('Adult Females Bought',log.boughtAdultFemale||0)+
+      rr('Weaners Bought',log.boughtWeaners||0)+
+      rr('Kits Bought',log.boughtKits||0));
 
     if (log.matingDate || log.rabbitsMated || log.edd || log.deliveryDate || log.expectedAtBirth) {
       body += rg('❤️ Mating',
@@ -643,7 +701,8 @@ function startOver() {
   });
   // Clear stepper hidden inputs and display inputs
   ['c_good','c_cracked','c_shelless','c_broken','c_deaths',
-   'r_litters','r_newkits','r_sold','r_dmale','r_dfemale','r_dweaners','r_dkits'].forEach(id => {
+   'r_litters','r_newkits','r_sold','r_dmale','r_dfemale','r_dweaners','r_dkits',
+   'r_bought_adult_male','r_bought_adult_female','r_bought_weaners','r_bought_kits'].forEach(id => {
     const hidden = document.getElementById(id); if (hidden) hidden.value = 0;
     const display = document.getElementById(id + '_d'); if (display) display.value = 0;
   });
