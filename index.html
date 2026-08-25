@@ -162,7 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('chicken')">✅ Submit Chicken Log</button></div>
   </div>
 
-  <!-- RABBIT FORM (UPDATED TREATMENTS) -->
+  <!-- RABBIT FORM -->
   <div id="form-rabbit" class="hidden">
     <div class="card">
       <div class="section-label">🐇 Animals Met Today (Required)</div>
@@ -287,16 +287,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <script>
 // ═══════════════════════════════════════════════════════
-// FIREBASE CONFIG – REPLACE WITH YOUR ACTUAL CONFIG
+// FIREBASE CONFIG – SAME AS OWNER DASHBOARD
 // ═══════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyBt8N19GkL1AK4XoIL2gm65_qJkyVk6HFY",
-  authDomain: "mr-iyanus-ting.firebaseapp.com",
-  databaseURL: "https://mr-iyanus-ting-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "mr-iyanus-ting",
-  storageBucket: "mr-iyanus-ting.firebasestorage.app",
-  messagingSenderId: "484744386869",
-  appId: "1:484744386869:web:8d259af2ed99101e56547c"
+  apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
+  authDomain: "farm-appp-4f7f6.firebaseapp.com",
+  databaseURL: "https://farm-appp-4f7f6-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "farm-appp-4f7f6",
+  storageBucket: "farm-appp-4f7f6.firebasestorage.app",
+  messagingSenderId: "637677324102",
+  appId: "1:637677324102:web:f564617ac59012909c0747"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -530,13 +530,17 @@ function showReceipt(log) {
     rr('Entry ID',log.id));
 
   if (isC) {
-    body += rg('🐔 Production', rr('Birds Met',log.birds)+rr('Good Eggs',log.eggsGood,'highlight')+rr('Cracked',log.eggsCracked)+rr('Shelless',log.eggsShelless)+rr('Broken',log.eggsBroken)+rr('Crates',log.cratesSold)+rr('Revenue','₦'+Number(log.cratesRevenue).toLocaleString(),'highlight')+rr('Deaths',log.deaths,log.deaths>0?'danger':'')+(log.cause?rr('Cause',log.cause):''));
+    body += rg('🐔 Production',
+      rr('Birds Met',log.birds)+rr('Good Eggs',log.eggsGood,'highlight')+
+      rr('Cracked',log.eggsCracked)+rr('Shelless',log.eggsShelless)+rr('Broken',log.eggsBroken)+
+      rr('Crates',log.cratesSold)+rr('Revenue','₦'+Number(log.cratesRevenue).toLocaleString(),'highlight')+
+      rr('Deaths',log.deaths,log.deaths>0?'danger':'')+(log.cause?rr('Cause',log.cause):''));
   } else {
     body += rg('🐇 Animals Met', rr('Males',log.rMale)+rr('Females',log.rFemale)+rr('Weaners',log.rWeaners)+rr('Kits',log.rKits));
 
-    // Feed per treatment group
+    // Feed per treatment
     if (log.feedType || log.feedControl || log.feedTreatment1 || log.feedTreatment2 || log.feedTreatment3 || log.feedTreatment4) {
-      body += rg('🌾 Feed per Treatment', 
+      body += rg('🌾 Feed per Treatment',
         rr('Feed Type',log.feedType||'—')+
         rr('Control',(log.feedControl||0)+'g')+
         rr('Treatment 1',(log.feedTreatment1||0)+'g')+
@@ -548,9 +552,9 @@ function showReceipt(log) {
     // Water
     body += rg('💧 Water', rr('Intake (litres)',(log.waterLitres||0)+'L')+(log.waterTreatment?rr('Treatment',log.waterTreatment):''));
 
-    // Weight per treatment group
+    // Weight per treatment
     if (log.weekNum || log.weightControl || log.weightTreatment1 || log.weightTreatment2 || log.weightTreatment3 || log.weightTreatment4) {
-      body += rg('⚖️ Weight per Treatment (kg)', 
+      body += rg('⚖️ Weight per Treatment (kg)',
         (log.weekNum?rr('Week',log.weekNum):'')+
         rr('Control',log.weightControl||0)+
         rr('Treatment 1',log.weightTreatment1||0)+
@@ -560,7 +564,9 @@ function showReceipt(log) {
     }
 
     // Bought
-    body += rg('🛒 Rabbits Bought', rr('Adult Males',log.boughtAdultMale||0)+rr('Adult Females',log.boughtAdultFemale||0)+rr('Weaners',log.boughtWeaners||0)+rr('Kits',log.boughtKits||0));
+    body += rg('🛒 Rabbits Bought',
+      rr('Adult Males',log.boughtAdultMale||0)+rr('Adult Females',log.boughtAdultFemale||0)+
+      rr('Weaners',log.boughtWeaners||0)+rr('Kits',log.boughtKits||0));
 
     // Mating
     if (log.matingDate || log.rabbitsMated || log.edd || log.deliveryDate || log.expectedAtBirth) {
@@ -613,10 +619,16 @@ function backToFarm() { activeFarm=null; show('screen-farm'); }
 
 function startOver() {
   // Clear all inputs
-  ['c_birds','c_crates','c_revenue','c_cause','r_male','r_female','r_weaners','r_kits','r_feed_control','r_feed_t1','r_feed_t2','r_feed_t3','r_feed_t4','r_water','r_waterTreatment','r_weeknum','r_weight_control','r_weight_t1','r_weight_t2','r_weight_t3','r_weight_t4','r_mating','r_mated_count','r_edd','r_delivery_date','r_expected_birth'].forEach(id => {
+  ['c_birds','c_crates','c_revenue','c_cause','r_male','r_female','r_weaners','r_kits',
+   'r_feed_control','r_feed_t1','r_feed_t2','r_feed_t3','r_feed_t4',
+   'r_water','r_waterTreatment',
+   'r_weeknum','r_weight_control','r_weight_t1','r_weight_t2','r_weight_t3','r_weight_t4',
+   'r_mating','r_mated_count','r_edd','r_delivery_date','r_expected_birth'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['c_good','c_cracked','c_shelless','c_broken','c_deaths','r_litters','r_newkits','r_sold','r_dmale','r_dfemale','r_dweaners','r_dkits','r_bought_adult_male','r_bought_adult_female','r_bought_weaners','r_bought_kits'].forEach(id => {
+  ['c_good','c_cracked','c_shelless','c_broken','c_deaths',
+   'r_litters','r_newkits','r_sold','r_dmale','r_dfemale','r_dweaners','r_dkits',
+   'r_bought_adult_male','r_bought_adult_female','r_bought_weaners','r_bought_kits'].forEach(id => {
     const hidden = document.getElementById(id); if (hidden) hidden.value = 0;
     const display = document.getElementById(id + '_d'); if (display) display.value = 0;
   });
