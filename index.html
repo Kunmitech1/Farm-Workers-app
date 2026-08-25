@@ -91,14 +91,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="sync-indicator"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connecting…</span></div>
 </div>
 
-<!-- GROUP SELECT -->
+<!-- SCREEN 1: GROUP SELECT -->
 <div id="screen-group">
   <div class="welcome"><h2>Select Your Group</h2><p>Tap your group to continue</p></div>
   <div style="padding:0 18px" id="groupList"></div>
   <div id="noGroups" class="empty-state hidden">No groups set up yet.<br>Ask your supervisor to add groups first.</div>
 </div>
 
-<!-- GROUP PIN -->
+<!-- SCREEN 2: GROUP PIN -->
 <div id="screen-pin" class="hidden">
   <div class="card">
     <div class="section-label">🔒 Group Verification</div>
@@ -111,7 +111,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
-<!-- WORKER SELECT -->
+<!-- SCREEN 3: WORKER SELECT -->
 <div id="screen-workers" class="hidden">
   <div class="lock-badge">🔒 Group: <span id="lockedGroupBadge" style="margin-left:4px;color:var(--green)"></span></div>
   <div class="welcome"><h2>Who's logging today?</h2><p>Tap your name to start</p></div>
@@ -120,7 +120,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div style="padding:0 18px 14px"><button class="btn btn-secondary" onclick="backToGroups()">← Change Group</button></div>
 </div>
 
-<!-- FARM SELECT (rabbit only) -->
+<!-- SCREEN 4: FARM SELECT (rabbit only) -->
 <div id="screen-farm" class="hidden">
   <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToWorkers()">← Change Worker</button></div>
   <div class="card">
@@ -131,11 +131,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
-<!-- LOG FORM (rabbit only) -->
+<!-- SCREEN 5: LOG FORM -->
 <div id="screen-log" class="hidden">
   <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToFarm()">← Change Farm</button></div>
   <div id="workerBanner" style="margin:0 18px;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:14px;padding:14px 16px;font-weight:700;font-size:0.9rem"></div>
 
+  <!-- RABBIT FORM -->
   <div class="card">
     <div class="section-label">🐇 Animals Met Today (Required)</div>
     <div class="two-col">
@@ -148,15 +149,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
   </div>
 
+  <!-- FEED & WATER -->
   <div class="card">
     <div class="section-label">🌾 Feed & Water (Optional)</div>
     <div class="form-group"><div class="form-label">Feed Type</div><div class="chip-group"><span class="chip" id="chip-growers" onclick="pickRabbitFeed('Growers')">Growers</span><span class="chip" id="chip-forage" onclick="pickRabbitFeed('Forage')">Forage</span></div><input type="hidden" id="r_feedtype"></div>
+
     <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Feed per Treatment Group</div>
     <div class="form-group"><div class="form-label">Control (4 rabbits)</div><input type="number" class="form-input" id="r_feed_control" placeholder="grams"></div>
     <div class="form-group"><div class="form-label">Treatment 1 (4 rabbits)</div><input type="number" class="form-input" id="r_feed_t1" placeholder="grams"></div>
     <div class="form-group"><div class="form-label">Treatment 2 (4 rabbits)</div><input type="number" class="form-input" id="r_feed_t2" placeholder="grams"></div>
     <div class="form-group"><div class="form-label">Treatment 3 (4 rabbits)</div><input type="number" class="form-input" id="r_feed_t3" placeholder="grams"></div>
     <div class="form-group"><div class="form-label">Treatment 4 (4 rabbits)</div><input type="number" class="form-input" id="r_feed_t4" placeholder="grams"></div>
+
     <div class="form-group"><div class="form-label">Water Intake (litres)</div><input type="number" class="form-input" id="r_water" placeholder="e.g. 5" step="0.1"></div>
     <div class="form-group">
       <div class="form-label">💧 Water Treatment</div>
@@ -171,6 +175,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
   </div>
 
+  <!-- WEEKLY WEIGHT -->
   <div class="card">
     <div class="section-label">⚖️ Weekly Weight (Optional)</div>
     <div class="form-group"><div class="form-label">Week Number</div><input type="number" class="form-input" id="r_weeknum" placeholder="e.g. 6"></div>
@@ -182,6 +187,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="form-group"><div class="form-label">Treatment 4</div><input type="number" class="form-input" id="r_weight_t4" placeholder="kg" step="0.01"></div>
   </div>
 
+  <!-- MATING -->
   <div class="card">
     <div class="section-label">❤️ Mating (Optional)</div>
     <div class="form-group"><div class="form-label">Date of Mating</div><input type="date" class="form-input" id="r_mating"></div>
@@ -191,17 +197,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="form-group"><div class="form-label">Expected at Birth</div><input type="number" class="form-input" id="r_expected_birth" placeholder="0"></div>
   </div>
 
+  <!-- LITTERS & KITS -->
   <div class="card">
     <div class="section-label">🐣 Litters & Kits Born (Optional)</div>
     <div class="form-group"><div class="form-label">New Litters</div><div class="stepper"><button class="step-btn" onclick="adj('r_litters',-1)">−</button><input type="number" class="step-val" id="r_litters_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_litters',1)">+</button></div><input type="hidden" id="r_litters" value="0"></div>
     <div class="form-group"><div class="form-label">New Kits Born</div><div class="stepper"><button class="step-btn" onclick="adj('r_newkits',-1)">−</button><input type="number" class="step-val" id="r_newkits_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_newkits',1)">+</button></div><input type="hidden" id="r_newkits" value="0"></div>
   </div>
 
+  <!-- RABBITS SOLD -->
   <div class="card">
     <div class="section-label">💰 Rabbits Sold (Optional)</div>
     <div class="form-group"><div class="form-label">Number Sold</div><div class="stepper"><button class="step-btn" onclick="adj('r_sold',-1)">−</button><input type="number" class="step-val" id="r_sold_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_sold',1)">+</button></div><input type="hidden" id="r_sold" value="0"></div>
   </div>
 
+  <!-- RABBITS BOUGHT -->
   <div class="card">
     <div class="section-label">🛒 Rabbits Bought (Optional)</div>
     <div class="two-col">
@@ -214,6 +223,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
   </div>
 
+  <!-- MORTALITY -->
   <div class="card">
     <div class="section-label">💀 Mortality — specify by category (Required)</div>
     <div class="two-col">
@@ -249,7 +259,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
-// Firebase config (same as owner)
 const firebaseConfig = {
   apiKey: "AIzaSyBt8N19GkL1AK4XoIL2gm65_qJkyVk6HFY",
   authDomain: "mr-iyanus-ting.firebaseapp.com",
@@ -262,8 +271,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-var activeGroup = null, activeWorker = null;
-var lastReceipt = null;
+var activeGroup = null, activeWorker = null, lastReceipt = null;
 
 function init() {
   document.getElementById('headerDate').textContent =
@@ -339,10 +347,8 @@ function pickWorker(id, name, initials) {
 }
 
 function pickFarm(farm) {
-  // farm is always 'rabbit'
   show('screen-log');
-  document.getElementById('workerBanner').textContent =
-    `👤 ${activeWorker.name} · 🐇 Rabbit Farm · ${activeGroup.name}`;
+  document.getElementById('workerBanner').textContent = `👤 ${activeWorker.name} · 🐇 Rabbit Farm · ${activeGroup.name}`;
 }
 
 function pickRabbitFeed(type) {
