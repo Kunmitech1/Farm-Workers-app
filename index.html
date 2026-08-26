@@ -1,1274 +1,745 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Farm Log</title>
-    <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js">
-    </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box
-        }
-        :root {
-            --green: #16a34a;
-            --green2: #15803d;
-            --navy: #0f2744;
-            --amber: #d97706;
-            --rose: #be185d;
-            --red: #dc2626;
-            --slate: #64748b;
-            --bg: #f0fdf4;
-            --card: #fff;
-            --border: #e2e8f0;
-            --text: #0f172a
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            min-height: 100vh;
-            color: var(--text)
-        }
-        .app {
-            max-width: 480px;
-            margin: 0 auto;
-            background: var(--bg);
-            min-height: 100vh;
-            padding-bottom: 30px
-        }
-        .header {
-            background: linear-gradient(135deg, var(--green), var(--green2));
-            padding: 24px 20px 20px;
-            color: #fff
-        }
-        .header-top {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 4px
-        }
-        .header-icon {
-            width: 36px;
-            height: 36px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem
-        }
-        .header h1 {
-            font-size: 1.2rem;
-            font-weight: 800
-        }
-        .header-sub {
-            font-size: 0.78rem;
-            opacity: 0.8;
-            margin-top: 4px
-        }
-        .sync-indicator {
-            font-size: 0.7rem;
-            opacity: 0.8;
-            margin-top: 3px;
-            display: flex;
-            align-items: center;
-            gap: 5px
-        }
-        .sync-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #4ade80;
-            display: inline-block
-        }
-        .sync-dot.offline {
-            background: #f87171
-        }
-        .card {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 20px;
-            margin: 16px 18px;
-            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07)
-        }
-        .section-label {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: var(--slate);
-            font-weight: 700;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px
-        }
-        .section-label::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border)
-        }
-        .form-group {
-            margin-bottom: 18px
-        }
-        .form-label {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: var(--text)
-        }
-        .form-input,
-        select.form-input {
-            width: 100%;
-            padding: 15px 16px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-family: inherit;
-            background: #fff
-        }
-        .form-input:focus,
-        select.form-input:focus {
-            outline: none;
-            border-color: var(--green)
-        }
-        .stepper {
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-        .step-btn {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            border: 2px solid var(--border);
-            background: #fff;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--green);
-            cursor: pointer;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center
-        }
-        .step-btn:active {
-            background: var(--bg)
-        }
-        .step-val {
-            flex: 1;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--text);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 10px;
-            width: 100%;
-            font-family: inherit
-        }
-        .step-val:focus {
-            outline: none;
-            border-color: var(--green)
-        }
-        .chip-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px
-        }
-        .chip {
-            padding: 10px 20px;
-            border: 2px solid var(--border);
-            border-radius: 24px;
-            background: #fff;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s
-        }
-        .chip:active,
-        .chip.active {
-            background: var(--green);
-            color: #fff;
-            border-color: var(--green)
-        }
-        .worker-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 16px;
-            background: #fff;
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s
-        }
-        .worker-item:active {
-            border-color: var(--green);
-            background: #dcfce7;
-            transform: scale(0.98)
-        }
-        .avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green), var(--green2));
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            font-weight: 800;
-            flex-shrink: 0
-        }
-        .worker-name {
-            font-weight: 700;
-            font-size: 1rem
-        }
-        .worker-sub {
-            font-size: 0.78rem;
-            color: var(--slate);
-            margin-top: 2px
-        }
-        .w-arrow {
-            font-size: 1.4rem;
-            color: #94a3b8
-        }
-        .farm-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px
-        }
-        .farm-card {
-            padding: 24px 18px;
-            border: 2.5px solid var(--border);
-            border-radius: 20px;
-            text-align: center;
-            cursor: pointer;
-            background: #fff;
-            transition: all 0.2s
-        }
-        .farm-card:active,
-        .farm-card.sel {
-            border-color: var(--green);
-            background: #dcfce7
-        }
-        .farm-emoji {
-            font-size: 2.6rem;
-            margin-bottom: 10px
-        }
-        .farm-nm {
-            font-weight: 700;
-            font-size: 1rem
-        }
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: opacity 0.2s
-        }
-        .btn:active {
-            opacity: 0.85
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--green), var(--green2));
-            color: #fff
-        }
-        .btn-secondary {
-            background: #fff;
-            color: var(--text);
-            border: 2px solid var(--border)
-        }
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px
-        }
-        .receipt {
-            background: #fff;
-            border-radius: 24px;
-            padding: 0;
-            margin: 16px;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-            overflow: hidden
-        }
-        .receipt-header {
-            background: linear-gradient(135deg, var(--green), var(--green2));
-            color: #fff;
-            padding: 24px;
-            text-align: center
-        }
-        .receipt-header-icon {
-            font-size: 2.5rem;
-            margin-bottom: 8px
-        }
-        .receipt-header h2 {
-            font-size: 1.2rem;
-            font-weight: 800
-        }
-        .receipt-header-sub {
-            font-size: 0.8rem;
-            opacity: 0.85;
-            margin-top: 4px
-        }
-        .receipt-body {
-            padding: 20px
-        }
-        .receipt-group {
-            margin-bottom: 20px
-        }
-        .receipt-group-title {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--slate);
-            font-weight: 700;
-            padding: 8px 0 6px;
-            border-bottom: 1.5px solid var(--border);
-            margin-bottom: 10px
-        }
-        .receipt-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            font-size: 0.88rem
-        }
-        .receipt-label {
-            color: var(--slate);
-            font-weight: 500
-        }
-        .receipt-val {
-            font-weight: 700;
-            color: var(--text)
-        }
-        .receipt-val.highlight {
-            color: var(--green)
-        }
-        .receipt-val.danger {
-            color: var(--red)
-        }
-        .receipt-footer {
-            background: #f8fafc;
-            padding: 16px;
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--slate);
-            border-top: 1px solid var(--border)
-        }
-        .receipt-stamp {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--green);
-            color: #fff;
-            border-radius: 24px;
-            padding: 6px 16px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-top: 8px
-        }
-        .lock-badge {
-            background: #fef2f2;
-            color: var(--red);
-            border: 1.5px solid #fecaca;
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            text-align: center;
-            margin: 12px 18px;
-            display: flex;
-            align-items: center;
-            gap: 6px
-        }
-        .hidden {
-            display: none !important
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--slate);
-            font-size: 0.85rem;
-            line-height: 1.6
-        }
-        .back-btn {
-            background: none;
-            border: none;
-            color: var(--green);
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            padding: 8px 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px
-        }
-        .group-select-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 16px;
-            background: #fff;
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s
-        }
-        .group-select-item:active {
-            border-color: var(--green);
-            background: #dcfce7
-        }
-        .group-sel-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, var(--green), var(--green2));
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            font-weight: 800;
-            flex-shrink: 0
-        }
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(16px)
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-        .slide-in {
-            animation: slideUp 0.35s ease forwards
-        }
-        .welcome {
-            text-align: center;
-            padding: 26px 18px 14px
-        }
-        .welcome h2 {
-            font-size: 1.1rem;
-            font-weight: 800;
-            margin-bottom: 4px
-        }
-        .welcome p {
-            font-size: 0.85rem;
-            color: var(--slate)
-        }
-        .submitting-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 999;
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 700;
-            flex-direction: column;
-            gap: 12px
-        }
-        .spinner {
-            width: 36px;
-            height: 36px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg)
-            }
-        }
-        .entry-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 8px;
-            flex-wrap: wrap
-        }
-        .entry-row select,
-        .entry-row input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            min-width: 60px
-        }
-        .remove-entry {
-            background: var(--red);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            font-weight: 700;
-            cursor: pointer;
-            flex-shrink: 0
-        }
-        .add-btn {
-            background: var(--green);
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 4px
-        }
-        .water-group-wrap {
-            background: #f0fdf4;
-            border: 2px dashed var(--green);
-            border-radius: 16px;
-            padding: 16px 18px;
-            margin: 12px 0 18px;
-            text-align: center
-        }
-        .water-group-wrap .form-label {
-            font-size: 0.9rem;
-            margin-bottom: 4px
-        }
-        .water-group-wrap .form-input {
-            max-width: 200px;
-            margin: 0 auto;
-            text-align: center;
-            font-weight: 700
-        }
-        .water-group-label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--green2)
-        }
-        .water-group-label span {
-            font-size: 1.2rem
-        }
-        .feed-row-label {
-            width: 56px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            flex-shrink: 0
-        }
-        .entry-row .feed-input {
-            flex: 2;
-            min-width: 100px
-        }
-        @media(max-width:420px) {
-            .entry-row {
-                flex-wrap: wrap
-            }
-            .entry-row .feed-input {
-                flex: 1 1 100%
-            }
-            .feed-row-label {
-                width: 100%;
-                text-align: left;
-                padding-bottom: 2px
-            }
-            .water-group-wrap .form-input {
-                max-width: 100%
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Farm Log</title>
+<script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--green:#16a34a;--green2:#15803d;--navy:#0f2744;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f0fdf4;--card:#fff;--border:#e2e8f0;--text:#0f172a}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+.app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:30px}
+.header{background:linear-gradient(135deg,var(--green),var(--green2));padding:24px 20px 20px;color:#fff}
+.header-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.header-icon{width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.header h1{font-size:1.2rem;font-weight:800}
+.header-sub{font-size:0.78rem;opacity:0.8;margin-top:4px}
+.sync-indicator{font-size:0.7rem;opacity:0.8;margin-top:3px;display:flex;align-items:center;gap:5px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block}
+.sync-dot.offline{background:#f87171}
+.card{background:var(--card);border-radius:20px;padding:20px;margin:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
+.section-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--slate);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--text)}
+.form-input,select.form-input{width:100%;padding:15px 16px;border:2px solid var(--border);border-radius:12px;font-size:1rem;font-family:inherit;background:#fff}
+.form-input:focus,select.form-input:focus{outline:none;border-color:var(--green)}
+.stepper{display:flex;align-items:center;gap:10px}
+.step-btn{width:46px;height:46px;border-radius:50%;border:2px solid var(--border);background:#fff;font-size:1.2rem;font-weight:700;color:var(--green);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.step-btn:active{background:var(--bg)}
+.step-val{flex:1;text-align:center;font-size:1.5rem;font-weight:800;color:var(--text);border:2px solid var(--border);border-radius:12px;padding:10px;width:100%;font-family:inherit}
+.step-val:focus{outline:none;border-color:var(--green)}
+.chip-group{display:flex;flex-wrap:wrap;gap:10px}
+.chip{padding:10px 20px;border:2px solid var(--border);border-radius:24px;background:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s}
+.chip:active,.chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+.worker-item{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:2px solid var(--border);border-radius:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s}
+.worker-item:active{border-color:var(--green);background:#dcfce7;transform:scale(0.98)}
+.avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}
+.worker-name{font-weight:700;font-size:1rem}
+.worker-sub{font-size:0.78rem;color:var(--slate);margin-top:2px}
+.w-arrow{font-size:1.4rem;color:#94a3b8}
+.farm-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.farm-card{padding:24px 18px;border:2.5px solid var(--border);border-radius:20px;text-align:center;cursor:pointer;background:#fff;transition:all 0.2s}
+.farm-card:active,.farm-card.sel{border-color:var(--green);background:#dcfce7}
+.farm-emoji{font-size:2.6rem;margin-bottom:10px}
+.farm-nm{font-weight:700;font-size:1rem}
+.btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:10px;transition:opacity 0.2s}
+.btn:active{opacity:0.85}
+.btn-primary{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff}
+.btn-secondary{background:#fff;color:var(--text);border:2px solid var(--border)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.receipt{background:#fff;border-radius:24px;padding:0;margin:16px;box-shadow:0 6px 24px rgba(0,0,0,0.1);overflow:hidden}
+.receipt-header{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;padding:24px;text-align:center}
+.receipt-header-icon{font-size:2.5rem;margin-bottom:8px}
+.receipt-header h2{font-size:1.2rem;font-weight:800}
+.receipt-header-sub{font-size:0.8rem;opacity:0.85;margin-top:4px}
+.receipt-body{padding:20px}
+.receipt-group{margin-bottom:20px}
+.receipt-group-title{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate);font-weight:700;padding:8px 0 6px;border-bottom:1.5px solid var(--border);margin-bottom:10px}
+.receipt-row{display:flex;justify-content:space-between;padding:6px 0;font-size:0.88rem}
+.receipt-label{color:var(--slate);font-weight:500}
+.receipt-val{font-weight:700;color:var(--text)}
+.receipt-val.highlight{color:var(--green)}
+.receipt-val.danger{color:var(--red)}
+.receipt-footer{background:#f8fafc;padding:16px;text-align:center;font-size:0.75rem;color:var(--slate);border-top:1px solid var(--border)}
+.receipt-stamp{display:inline-flex;align-items:center;gap:6px;background:var(--green);color:#fff;border-radius:24px;padding:6px 16px;font-size:0.8rem;font-weight:700;margin-top:8px}
+.lock-badge{background:#fef2f2;color:var(--red);border:1.5px solid #fecaca;border-radius:10px;padding:10px 14px;font-size:0.82rem;font-weight:600;text-align:center;margin:12px 18px;display:flex;align-items:center;gap:6px}
+.hidden{display:none !important}
+.empty-state{text-align:center;padding:40px 20px;color:var(--slate);font-size:0.85rem;line-height:1.6}
+.back-btn{background:none;border:none;color:var(--green);font-size:0.9rem;font-weight:700;cursor:pointer;padding:8px 14px;display:flex;align-items:center;gap:6px}
+.group-select-item{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:2px solid var(--border);border-radius:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s}
+.group-select-item:active{border-color:var(--green);background:#dcfce7}
+.group-sel-icon{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.slide-in{animation:slideUp 0.35s ease forwards}
+.welcome{text-align:center;padding:26px 18px 14px}
+.welcome h2{font-size:1.1rem;font-weight:800;margin-bottom:4px}
+.welcome p{font-size:0.85rem;color:var(--slate)}
+.submitting-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;color:#fff;font-size:1rem;font-weight:700;flex-direction:column;gap:12px}
+.spinner{width:36px;height:36px;border:4px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.entry-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.entry-row select,.entry-row input{flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:0.9rem;min-width:60px}
+.remove-entry{background:var(--red);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-weight:700;cursor:pointer;flex-shrink:0}
+.add-btn{background:var(--green);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;width:100%;margin-top:4px}
+.water-group-wrap{background:#f0fdf4;border:2px dashed var(--green);border-radius:16px;padding:16px 18px;margin:12px 0 18px;text-align:center}
+.water-group-wrap .form-label{font-size:0.9rem;margin-bottom:4px}
+.water-group-wrap .form-input{max-width:200px;margin:0 auto;text-align:center;font-weight:700}
+.water-group-label{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:0.95rem;color:var(--green2)}
+.water-group-label span{font-size:1.2rem}
+.feed-row-label{width:56px;font-weight:700;font-size:0.85rem;flex-shrink:0}
+.entry-row .feed-input{flex:2;min-width:100px}
+@media(max-width:420px){.entry-row{flex-wrap:wrap}.entry-row .feed-input{flex:1 1 100%}.feed-row-label{width:100%;text-align:left;padding-bottom:2px}.water-group-wrap .form-input{max-width:100%}}
+</style>
 </head>
 <body>
-    <div class="app">
+<div class="app">
 
-        <div class="header">
-            <div class="header-top"><div class="header-icon">🌿</div><h1>Farm Log</h1></div>
-            <div class="header-sub" id="headerDate">Loading…</div>
-            <div class="sync-indicator"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connecting…</span></div>
+<div class="header">
+  <div class="header-top"><div class="header-icon">🌿</div><h1>Farm Log</h1></div>
+  <div class="header-sub" id="headerDate">Loading…</div>
+  <div class="sync-indicator"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connecting…</span></div>
+</div>
+
+<!-- GROUP SELECT -->
+<div id="screen-group">
+  <div class="welcome"><h2>Select Your Group</h2><p>Tap your group to continue</p></div>
+  <div style="padding:0 18px" id="groupList"></div>
+  <div id="noGroups" class="empty-state hidden">No groups set up yet.<br>Ask your supervisor to add groups first.</div>
+</div>
+
+<!-- GROUP PIN -->
+<div id="screen-pin" class="hidden">
+  <div class="card">
+    <div class="section-label">🔒 Group Verification</div>
+    <div id="pinGroupName" style="font-weight:800;font-size:1rem;margin-bottom:4px"></div>
+    <div style="font-size:0.82rem;color:var(--slate);margin-bottom:16px">Enter your group PIN to continue</div>
+    <input type="password" inputmode="numeric" class="form-input" id="pinInput" placeholder="• • • •" maxlength="8"
+      style="text-align:center;letter-spacing:0.3em;font-size:1.2rem;font-weight:800">
+    <button class="btn btn-primary" onclick="verifyPin()">🔓 Unlock</button>
+    <button class="btn btn-secondary" onclick="backToGroups()">← Back</button>
+  </div>
+</div>
+
+<!-- WORKER SELECT -->
+<div id="screen-workers" class="hidden">
+  <div class="lock-badge">🔒 Group: <span id="lockedGroupBadge" style="margin-left:4px;color:var(--green)"></span></div>
+  <div class="welcome"><h2>Who's logging today?</h2><p>Tap your name to start</p></div>
+  <div style="padding:0 18px" id="workerList"></div>
+  <div id="noWorkers" class="empty-state hidden">No workers in this group yet.</div>
+  <div style="padding:0 18px 14px"><button class="btn btn-secondary" onclick="backToGroups()">← Change Group</button></div>
+</div>
+
+<!-- FARM SELECT -->
+<div id="screen-farm" class="hidden">
+  <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToWorkers()">← Change Worker</button></div>
+  <div class="card">
+    <div class="section-label">🏡 Which farm?</div>
+    <div class="farm-grid">
+      <div class="farm-card" id="fc-chicken" onclick="pickFarm('chicken')"><div class="farm-emoji">🐔</div><div class="farm-nm">Chicken Farm</div></div>
+      <div class="farm-card" id="fc-rabbit" onclick="pickFarm('rabbit')"><div class="farm-emoji">🐇</div><div class="farm-nm">Rabbit Farm</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG FORM -->
+<div id="screen-log" class="hidden">
+  <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToFarm()">← Change Farm</button></div>
+  <div id="workerBanner" style="margin:0 18px;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:14px;padding:14px 16px;font-weight:700;font-size:0.9rem"></div>
+
+  <!-- CHICKEN FORM (unchanged) -->
+  <div id="form-chicken" class="hidden">
+    <div class="card">
+      <div class="section-label">🐔 Birds Met Today</div>
+      <div class="form-group"><div class="form-label">Number of Birds *</div><input type="number" class="form-input" id="c_birds" placeholder="0"></div>
+    </div>
+    <div class="card">
+      <div class="section-label">🥚 Eggs Collected</div>
+      <div class="two-col">
+        <div class="form-group"><div class="form-label">Good</div><div class="stepper"><button class="step-btn" onclick="adj('c_good',-1)">−</button><input type="number" class="step-val" id="c_good_d" value="0" min="0"><button class="step-btn" onclick="adj('c_good',1)">+</button></div><input type="hidden" id="c_good" value="0"></div>
+        <div class="form-group"><div class="form-label">Cracked</div><div class="stepper"><button class="step-btn" onclick="adj('c_cracked',-1)">−</button><input type="number" class="step-val" id="c_cracked_d" value="0" min="0"><button class="step-btn" onclick="adj('c_cracked',1)">+</button></div><input type="hidden" id="c_cracked" value="0"></div>
+      </div>
+      <div class="two-col">
+        <div class="form-group"><div class="form-label">Shelless</div><div class="stepper"><button class="step-btn" onclick="adj('c_shelless',-1)">−</button><input type="number" class="step-val" id="c_shelless_d" value="0" min="0"><button class="step-btn" onclick="adj('c_shelless',1)">+</button></div><input type="hidden" id="c_shelless" value="0"></div>
+        <div class="form-group"><div class="form-label">Broken</div><div class="stepper"><button class="step-btn" onclick="adj('c_broken',-1)">−</button><input type="number" class="step-val" id="c_broken_d" value="0" min="0"><button class="step-btn" onclick="adj('c_broken',1)">+</button></div><input type="hidden" id="c_broken" value="0"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">📦 Sales</div>
+      <div class="form-group"><div class="form-label">Crates Sold</div><input type="number" step="0.5" class="form-input" id="c_crates" placeholder="0"></div>
+      <div class="form-group"><div class="form-label">Revenue (₦)</div><input type="number" step="100" class="form-input" id="c_revenue" placeholder="0"></div>
+    </div>
+    <div class="card">
+      <div class="section-label">💀 Mortality</div>
+      <div class="form-group"><div class="form-label">Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('c_deaths',-1)">−</button><input type="number" class="step-val" id="c_deaths_d" value="0" min="0"><button class="step-btn" onclick="adj('c_deaths',1)">+</button></div><input type="hidden" id="c_deaths" value="0"></div>
+      <div class="form-group"><div class="form-label">Cause (optional)</div><input type="text" class="form-input" id="c_cause" placeholder="e.g. disease, accident"></div>
+    </div>
+    <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('chicken')">✅ Submit Chicken Log</button></div>
+  </div>
+
+  <!-- RABBIT FORM -->
+  <div id="form-rabbit" class="hidden">
+    <div class="card">
+      <div class="section-label">🐇 Animals Met Today (Required)</div>
+      <div class="two-col">
+        <div class="form-group"><div class="form-label">Males *</div><input type="number" class="form-input" id="r_male" placeholder="0"></div>
+        <div class="form-group"><div class="form-label">Females *</div><input type="number" class="form-input" id="r_female" placeholder="0"></div>
+      </div>
+      <div class="two-col">
+        <div class="form-group"><div class="form-label">Weaners *</div><input type="number" class="form-input" id="r_weaners" placeholder="0"></div>
+        <div class="form-group"><div class="form-label">Kits *</div><input type="number" class="form-input" id="r_kits" placeholder="0"></div>
+      </div>
+    </div>
+
+    <!-- FEED & WATER -->
+    <div class="card">
+      <div class="section-label">🌾 Feed & Water (Optional)</div>
+      <div class="form-group">
+        <div class="form-label">Feed Type</div>
+        <div class="chip-group">
+          <span class="chip" id="chip-growers" onclick="pickRabbitFeed('Growers')">Growers</span>
+          <span class="chip" id="chip-forage" onclick="pickRabbitFeed('Forage')">Forage</span>
         </div>
-
-        <!-- GROUP SELECT -->
-        <div id="screen-group">
-            <div class="welcome"><h2>Select Your Group</h2><p>Tap your group to continue</p></div>
-            <div style="padding:0 18px" id="groupList"></div>
-            <div id="noGroups" class="empty-state hidden">No groups set up yet.<br>Ask your supervisor to add groups first.</div>
+        <input type="hidden" id="r_feedtype">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Select Treatment</div>
+        <div class="chip-group" id="feedTreatmentChips">
+          <span class="chip active" data-treatment="control" onclick="selectFeedTreatment('control')">Control</span>
+          <span class="chip" data-treatment="t1" onclick="selectFeedTreatment('t1')">Treatment 1</span>
+          <span class="chip" data-treatment="t2" onclick="selectFeedTreatment('t2')">Treatment 2</span>
+          <span class="chip" data-treatment="t3" onclick="selectFeedTreatment('t3')">Treatment 3</span>
+          <span class="chip" data-treatment="t4" onclick="selectFeedTreatment('t4')">Treatment 4</span>
+          <span class="chip" data-treatment="t5" onclick="selectFeedTreatment('t5')">Treatment 5</span>
+          <span class="chip" data-treatment="t6" onclick="selectFeedTreatment('t6')">Treatment 6</span>
         </div>
+      </div>
 
-        <!-- GROUP PIN -->
-        <div id="screen-pin" class="hidden">
-            <div class="card">
-                <div class="section-label">🔒 Group Verification</div>
-                <div id="pinGroupName" style="font-weight:800;font-size:1rem;margin-bottom:4px"></div>
-                <div style="font-size:0.82rem;color:var(--slate);margin-bottom:16px">Enter your group PIN to continue</div>
-                <input type="password" inputmode="numeric" class="form-input" id="pinInput" placeholder="• • • •" maxlength="8" style="text-align:center;letter-spacing:0.3em;font-size:1.2rem;font-weight:800">
-                <button class="btn btn-primary" onclick="verifyPin()">🔓 Unlock</button>
-                <button class="btn btn-secondary" onclick="backToGroups()">← Back</button>
-            </div>
+      <!-- ✅ WATER INTAKE – PER GROUP, PLACED IN THE MIDDLE -->
+      <div class="water-group-wrap">
+        <div class="water-group-label"><span>💧</span> Water Intake (per group)</div>
+        <div class="form-group" style="margin-bottom:0">
+          <input type="number" step="0.1" class="form-input" id="r_group_water" placeholder="Total litres for group" style="max-width:220px;">
         </div>
+        <div style="font-size:0.7rem;color:var(--slate);margin-top:4px">Enter total water given to the entire group today</div>
+      </div>
 
-        <!-- WORKER SELECT -->
-        <div id="screen-workers" class="hidden">
-            <div class="lock-badge">🔒 Group: <span id="lockedGroupBadge" style="margin-left:4px;color:var(--green)"></span></div>
-            <div class="welcome"><h2>Who's logging today?</h2><p>Tap your name to start</p></div>
-            <div style="padding:0 18px" id="workerList"></div>
-            <div id="noWorkers" class="empty-state hidden">No workers in this group yet.</div>
-            <div style="padding:0 18px 14px"><button class="btn btn-secondary" onclick="backToGroups()">← Change Group</button></div>
+      <!-- Per-rabbit feed inputs (water removed) -->
+      <div id="feedRabbitInputs"></div>
+    </div>
+
+    <!-- WEEKLY WEIGHT -->
+    <div class="card">
+      <div class="section-label">⚖️ Weekly Weight (Optional)</div>
+      <div class="form-group"><div class="form-label">Week Number</div><input type="number" class="form-input" id="r_weeknum" placeholder="e.g. 6"></div>
+      <div class="form-group">
+        <div class="form-label">Select Treatment</div>
+        <div class="chip-group" id="weightTreatmentChips">
+          <span class="chip active" data-treatment="control" onclick="selectWeightTreatment('control')">Control</span>
+          <span class="chip" data-treatment="t1" onclick="selectWeightTreatment('t1')">Treatment 1</span>
+          <span class="chip" data-treatment="t2" onclick="selectWeightTreatment('t2')">Treatment 2</span>
+          <span class="chip" data-treatment="t3" onclick="selectWeightTreatment('t3')">Treatment 3</span>
+          <span class="chip" data-treatment="t4" onclick="selectWeightTreatment('t4')">Treatment 4</span>
+          <span class="chip" data-treatment="t5" onclick="selectWeightTreatment('t5')">Treatment 5</span>
+          <span class="chip" data-treatment="t6" onclick="selectWeightTreatment('t6')">Treatment 6</span>
         </div>
+      </div>
+      <div id="weightRabbitInputs"></div>
+    </div>
 
-        <!-- FARM SELECT -->
-        <div id="screen-farm" class="hidden">
-            <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToWorkers()">← Change Worker</button></div>
-            <div class="card">
-                <div class="section-label">🏡 Which farm?</div>
-                <div class="farm-grid">
-                    <div class="farm-card" id="fc-chicken" onclick="pickFarm('chicken')"><div class="farm-emoji">🐔</div><div class="farm-nm">Chicken Farm</div></div>
-                    <div class="farm-card" id="fc-rabbit" onclick="pickFarm('rabbit')"><div class="farm-emoji">🐇</div><div class="farm-nm">Rabbit Farm</div></div>
-                </div>
-            </div>
-        </div>
+    <!-- MATING (Expected at Birth removed) -->
+    <div class="card">
+      <div class="section-label">❤️ Mating (Optional)</div>
+      <div class="form-group"><div class="form-label">Date of Mating</div><input type="date" class="form-input" id="r_mating"></div>
+      <div class="form-group"><div class="form-label">Rabbits Mated</div><input type="number" class="form-input" id="r_mated_count" placeholder="0"></div>
+      <div class="form-group"><div class="form-label">EDD (Expected Delivery Date)</div><input type="date" class="form-input" id="r_edd"></div>
+      <div class="form-group"><div class="form-label">Delivery Date</div><input type="date" class="form-input" id="r_delivery_date"></div>
+      <!-- ❌ Expected at Birth removed -->
+    </div>
 
-        <!-- LOG FORM -->
-        <div id="screen-log" class="hidden">
-            <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToFarm()">← Change Farm</button></div>
-            <div id="workerBanner" style="margin:0 18px;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:14px;padding:14px 16px;font-weight:700;font-size:0.9rem"></div>
+    <!-- LITTERS & KITS -->
+    <div class="card">
+      <div class="section-label">🐣 Litters & Kits Born (Optional)</div>
+      <div id="litterEntries"></div>
+      <button class="add-btn" type="button" onclick="addLitterEntry()">+ Add Litter/Kits Entry</button>
+    </div>
 
-            <!-- CHICKEN FORM (unchanged) -->
-            <div id="form-chicken" class="hidden">
-                <div class="card">
-                    <div class="section-label">🐔 Birds Met Today</div>
-                    <div class="form-group"><div class="form-label">Number of Birds *</div><input type="number" class="form-input" id="c_birds" placeholder="0"></div>
-                </div>
-                <div class="card">
-                    <div class="section-label">🥚 Eggs Collected</div>
-                    <div class="two-col">
-                        <div class="form-group"><div class="form-label">Good</div><div class="stepper"><button class="step-btn" onclick="adj('c_good',-1)">−</button><input type="number" class="step-val" id="c_good_d" value="0" min="0"><button class="step-btn" onclick="adj('c_good',1)">+</button></div><input type="hidden" id="c_good" value="0"></div>
-                        <div class="form-group"><div class="form-label">Cracked</div><div class="stepper"><button class="step-btn" onclick="adj('c_cracked',-1)">−</button><input type="number" class="step-val" id="c_cracked_d" value="0" min="0"><button class="step-btn" onclick="adj('c_cracked',1)">+</button></div><input type="hidden" id="c_cracked" value="0"></div>
-                    </div>
-                    <div class="two-col">
-                        <div class="form-group"><div class="form-label">Shelless</div><div class="stepper"><button class="step-btn" onclick="adj('c_shelless',-1)">−</button><input type="number" class="step-val" id="c_shelless_d" value="0" min="0"><button class="step-btn" onclick="adj('c_shelless',1)">+</button></div><input type="hidden" id="c_shelless" value="0"></div>
-                        <div class="form-group"><div class="form-label">Broken</div><div class="stepper"><button class="step-btn" onclick="adj('c_broken',-1)">−</button><input type="number" class="step-val" id="c_broken_d" value="0" min="0"><button class="step-btn" onclick="adj('c_broken',1)">+</button></div><input type="hidden" id="c_broken" value="0"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="section-label">📦 Sales</div>
-                    <div class="form-group"><div class="form-label">Crates Sold</div><input type="number" step="0.5" class="form-input" id="c_crates" placeholder="0"></div>
-                    <div class="form-group"><div class="form-label">Revenue (₦)</div><input type="number" step="100" class="form-input" id="c_revenue" placeholder="0"></div>
-                </div>
-                <div class="card">
-                    <div class="section-label">💀 Mortality</div>
-                    <div class="form-group"><div class="form-label">Deaths</div><div class="stepper"><button class="step-btn" onclick="adj('c_deaths',-1)">−</button><input type="number" class="step-val" id="c_deaths_d" value="0" min="0"><button class="step-btn" onclick="adj('c_deaths',1)">+</button></div><input type="hidden" id="c_deaths" value="0"></div>
-                    <div class="form-group"><div class="form-label">Cause (optional)</div><input type="text" class="form-input" id="c_cause" placeholder="e.g. disease, accident"></div>
-                </div>
-                <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('chicken')">✅ Submit Chicken Log</button></div>
-            </div>
+    <!-- RABBITS SOLD -->
+    <div class="card">
+      <div class="section-label">💰 Rabbits Sold (Optional)</div>
+      <div class="form-group"><div class="form-label">Number Sold</div><div class="stepper"><button class="step-btn" onclick="adj('r_sold',-1)">−</button><input type="number" class="step-val" id="r_sold_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_sold',1)">+</button></div><input type="hidden" id="r_sold" value="0"></div>
+    </div>
 
-            <!-- RABBIT FORM -->
-            <div id="form-rabbit" class="hidden">
-                <div class="card">
-                    <div class="section-label">🐇 Animals Met Today (Required)</div>
-                    <div class="two-col">
-                        <div class="form-group"><div class="form-label">Males *</div><input type="number" class="form-input" id="r_male" placeholder="0"></div>
-                        <div class="form-group"><div class="form-label">Females *</div><input type="number" class="form-input" id="r_female" placeholder="0"></div>
-                    </div>
-                    <div class="two-col">
-                        <div class="form-group"><div class="form-label">Weaners *</div><input type="number" class="form-input" id="r_weaners" placeholder="0"></div>
-                        <div class="form-group"><div class="form-label">Kits *</div><input type="number" class="form-input" id="r_kits" placeholder="0"></div>
-                    </div>
-                </div>
+    <!-- RABBITS BOUGHT -->
+    <div class="card">
+      <div class="section-label">🛒 Rabbits Bought (Optional)</div>
+      <div class="two-col">
+        <div class="form-group"><div class="form-label">Adult Males Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_adult_male',-1)">−</button><input type="number" class="step-val" id="r_bought_adult_male_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_adult_male',1)">+</button></div><input type="hidden" id="r_bought_adult_male" value="0"></div>
+        <div class="form-group"><div class="form-label">Adult Females Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_adult_female',-1)">−</button><input type="number" class="step-val" id="r_bought_adult_female_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_adult_female',1)">+</button></div><input type="hidden" id="r_bought_adult_female" value="0"></div>
+      </div>
+      <div class="two-col">
+        <div class="form-group"><div class="form-label">Weaners Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_weaners',-1)">−</button><input type="number" class="step-val" id="r_bought_weaners_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_weaners',1)">+</button></div><input type="hidden" id="r_bought_weaners" value="0"></div>
+        <div class="form-group"><div class="form-label">Kits Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_kits',-1)">−</button><input type="number" class="step-val" id="r_bought_kits_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_kits',1)">+</button></div><input type="hidden" id="r_bought_kits" value="0"></div>
+      </div>
+    </div>
 
-                <!-- FEED & WATER -->
-                <div class="card">
-                    <div class="section-label">🌾 Feed & Water (Optional)</div>
-                    <div class="form-group">
-                        <div class="form-label">Feed Type</div>
-                        <div class="chip-group">
-                            <span class="chip" id="chip-growers" onclick="pickRabbitFeed('Growers')">Growers</span>
-                            <span class="chip" id="chip-forage" onclick="pickRabbitFeed('Forage')">Forage</span>
-                        </div>
-                        <input type="hidden" id="r_feedtype">
-                    </div>
-                    <div class="form-group">
-                        <div class="form-label">Select Treatment</div>
-                        <div class="chip-group" id="feedTreatmentChips">
-                            <span class="chip active" data-treatment="control" onclick="selectFeedTreatment('control')">Control</span>
-                            <span class="chip" data-treatment="t1" onclick="selectFeedTreatment('t1')">Treatment 1</span>
-                            <span class="chip" data-treatment="t2" onclick="selectFeedTreatment('t2')">Treatment 2</span>
-                            <span class="chip" data-treatment="t3" onclick="selectFeedTreatment('t3')">Treatment 3</span>
-                            <span class="chip" data-treatment="t4" onclick="selectFeedTreatment('t4')">Treatment 4</span>
-                        </div>
-                    </div>
+    <!-- MORTALITY -->
+    <div class="card">
+      <div class="section-label">💀 Mortality (Optional – add per rabbit)</div>
+      <div id="deathEntries"></div>
+      <button class="add-btn" type="button" onclick="addDeathEntry()">+ Add Death Entry</button>
+    </div>
 
-                    <!-- ✅ WATER INTAKE – PER GROUP, PLACED IN THE MIDDLE -->
-                    <div class="water-group-wrap">
-                        <div class="water-group-label"><span>💧</span> Water Intake (per group)</div>
-                        <div class="form-group" style="margin-bottom:0">
-                            <input type="number" step="0.1" class="form-input" id="r_group_water" placeholder="Total litres for group" style="max-width:220px;">
-                        </div>
-                        <div style="font-size:0.7rem;color:var(--slate);margin-top:4px">Enter total water given to the entire group today</div>
-                    </div>
+    <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('rabbit')">✅ Submit Rabbit Log</button></div>
+  </div>
+</div>
 
-                    <!-- Per-rabbit feed inputs (water removed) -->
-                    <div id="feedRabbitInputs"></div>
-                </div>
+<!-- RECEIPT -->
+<div id="screen-receipt" class="hidden">
+  <div style="padding:10px 18px 0"><div class="lock-badge">🔒 Submitted — entry is locked and cannot be modified</div></div>
+  <div class="receipt" id="receiptCard"></div>
+  <div style="padding:0 18px 30px">
+    <button class="btn btn-primary" onclick="startOver()">📋 Log Another Entry</button>
+    <button class="btn btn-secondary" onclick="notifySupervisor()">📱 Notify Supervisor</button>
+  </div>
+</div>
 
-                <!-- WEEKLY WEIGHT -->
-                <div class="card">
-                    <div class="section-label">⚖️ Weekly Weight (Optional)</div>
-                    <div class="form-group"><div class="form-label">Week Number</div><input type="number" class="form-input" id="r_weeknum" placeholder="e.g. 6"></div>
-                    <div class="form-group">
-                        <div class="form-label">Select Treatment</div>
-                        <div class="chip-group" id="weightTreatmentChips">
-                            <span class="chip active" data-treatment="control" onclick="selectWeightTreatment('control')">Control</span>
-                            <span class="chip" data-treatment="t1" onclick="selectWeightTreatment('t1')">Treatment 1</span>
-                            <span class="chip" data-treatment="t2" onclick="selectWeightTreatment('t2')">Treatment 2</span>
-                            <span class="chip" data-treatment="t3" onclick="selectWeightTreatment('t3')">Treatment 3</span>
-                            <span class="chip" data-treatment="t4" onclick="selectWeightTreatment('t4')">Treatment 4</span>
-                        </div>
-                    </div>
-                    <div id="weightRabbitInputs"></div>
-                </div>
+<!-- Loading overlay -->
+<div class="submitting-overlay hidden" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div>Saving to database…</div>
+</div>
 
-                <!-- MATING (Expected at Birth removed) -->
-                <div class="card">
-                    <div class="section-label">❤️ Mating (Optional)</div>
-                    <div class="form-group"><div class="form-label">Date of Mating</div><input type="date" class="form-input" id="r_mating"></div>
-                    <div class="form-group"><div class="form-label">Rabbits Mated</div><input type="number" class="form-input" id="r_mated_count" placeholder="0"></div>
-                    <div class="form-group"><div class="form-label">EDD (Expected Delivery Date)</div><input type="date" class="form-input" id="r_edd"></div>
-                    <div class="form-group"><div class="form-label">Delivery Date</div><input type="date" class="form-input" id="r_delivery_date"></div>
-                    <!-- ❌ Expected at Birth removed -->
-                </div>
+</div><!-- end .app -->
 
-                <!-- LITTERS & KITS -->
-                <div class="card">
-                    <div class="section-label">🐣 Litters & Kits Born (Optional)</div>
-                    <div id="litterEntries"></div>
-                    <button class="add-btn" type="button" onclick="addLitterEntry()">+ Add Litter/Kits Entry</button>
-                </div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
+  authDomain: "farm-appp-4f7f6.firebaseapp.com",
+  databaseURL: "https://farm-appp-4f7f6-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "farm-appp-4f7f6",
+  storageBucket: "farm-appp-4f7f6.firebasestorage.app",
+  messagingSenderId: "637677324102",
+  appId: "1:637677324102:web:f564617ac59012909c0747"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-                <!-- RABBITS SOLD -->
-                <div class="card">
-                    <div class="section-label">💰 Rabbits Sold (Optional)</div>
-                    <div class="form-group"><div class="form-label">Number Sold</div><div class="stepper"><button class="step-btn" onclick="adj('r_sold',-1)">−</button><input type="number" class="step-val" id="r_sold_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_sold',1)">+</button></div><input type="hidden" id="r_sold" value="0"></div>
-                </div>
+var activeGroup = null, activeWorker = null, activeFarm = null;
+var lastReceipt = null;
 
-                <!-- RABBITS BOUGHT -->
-                <div class="card">
-                    <div class="section-label">🛒 Rabbits Bought (Optional)</div>
-                    <div class="two-col">
-                        <div class="form-group"><div class="form-label">Adult Males Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_adult_male',-1)">−</button><input type="number" class="step-val" id="r_bought_adult_male_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_adult_male',1)">+</button></div><input type="hidden" id="r_bought_adult_male" value="0"></div>
-                        <div class="form-group"><div class="form-label">Adult Females Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_adult_female',-1)">−</button><input type="number" class="step-val" id="r_bought_adult_female_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_adult_female',1)">+</button></div><input type="hidden" id="r_bought_adult_female" value="0"></div>
-                    </div>
-                    <div class="two-col">
-                        <div class="form-group"><div class="form-label">Weaners Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_weaners',-1)">−</button><input type="number" class="step-val" id="r_bought_weaners_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_weaners',1)">+</button></div><input type="hidden" id="r_bought_weaners" value="0"></div>
-                        <div class="form-group"><div class="form-label">Kits Bought</div><div class="stepper"><button class="step-btn" onclick="adj('r_bought_kits',-1)">−</button><input type="number" class="step-val" id="r_bought_kits_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_bought_kits',1)">+</button></div><input type="hidden" id="r_bought_kits" value="0"></div>
-                    </div>
-                </div>
+// Updated treatment rabbits: 7 treatments, 5 rabbits each (total 35)
+const treatmentRabbits = {
+  control: [1,2,3,4,5],
+  t1: [6,7,8,9,10],
+  t2: [11,12,13,14,15],
+  t3: [16,17,18,19,20],
+  t4: [21,22,23,24,25],
+  t5: [26,27,28,29,30],
+  t6: [31,32,33,34,35]
+};
 
-                <!-- MORTALITY -->
-                <div class="card">
-                    <div class="section-label">💀 Mortality (Optional – add per rabbit)</div>
-                    <div id="deathEntries"></div>
-                    <button class="add-btn" type="button" onclick="addDeathEntry()">+ Add Death Entry</button>
-                </div>
+let selectedFeedTreatment = 'control';
+let selectedWeightTreatment = 'control';
 
-                <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('rabbit')">✅ Submit Rabbit Log</button></div>
-            </div>
-        </div>
+function init() {
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  db.ref('groups').on('value', snap => renderGroupList());
+  db.ref('workers').on('value', snap => {
+    if (activeGroup && !document.getElementById('screen-workers').classList.contains('hidden'))
+      renderWorkerList();
+  });
+  renderGroupList();
+  buildFeedRabbitInputs();
+  buildWeightRabbitInputs();
+  addLitterEntry();
+  addDeathEntry();
+}
 
-        <!-- RECEIPT -->
-        <div id="screen-receipt" class="hidden">
-            <div style="padding:10px 18px 0"><div class="lock-badge">🔒 Submitted — entry is locked and cannot be modified</div></div>
-            <div class="receipt" id="receiptCard"></div>
-            <div style="padding:0 18px 30px">
-                <button class="btn btn-primary" onclick="startOver()">📋 Log Another Entry</button>
-                <button class="btn btn-secondary" onclick="notifySupervisor()">📱 Notify Supervisor</button>
-            </div>
-        </div>
+function renderGroupList() {
+  db.ref('groups').once('value').then(snap => {
+    const groups = snap.val() ? Object.values(snap.val()) : [];
+    const list = document.getElementById('groupList');
+    const none = document.getElementById('noGroups');
+    if (!groups.length) { list.innerHTML=''; none.classList.remove('hidden'); return; }
+    none.classList.add('hidden');
+    list.innerHTML = groups.map((g,i) =>
+      `<div class="group-select-item slide-in" style="animation-delay:${i*0.08}s" onclick="selectGroup('${g.id}','${g.name}')">
+        <div class="group-sel-icon">${g.name.charAt(0)}</div>
+        <div style="flex:1"><div style="font-weight:700">${g.name}</div><div style="font-size:0.75rem;color:var(--slate)">Tap to log your entry</div></div>
+        <div style="font-size:1.2rem;color:#94a3b8">›</div>
+      </div>`).join('');
+  });
+}
 
-        <!-- Loading overlay -->
-        <div class="submitting-overlay hidden" id="loadingOverlay">
-            <div class="spinner"></div>
-            <div>Saving to database…</div>
-        </div>
+function selectGroup(id, name) {
+  db.ref('groups').once('value').then(snap => {
+    const groups = snap.val();
+    const group = groups ? Object.values(groups).find(g => g.id === id) : null;
+    if (!group) return;
+    activeGroup = group;
+    document.getElementById('pinGroupName').textContent = name;
+    document.getElementById('pinInput').value = '';
+    show('screen-pin');
+  });
+}
 
-    </div><!-- end .app -->
+function verifyPin() {
+  const entered = document.getElementById('pinInput').value;
+  const correct = activeGroup.pin || '1234';
+  if (entered === correct) {
+    renderWorkerList();
+    show('screen-workers');
+    document.getElementById('lockedGroupBadge').textContent = activeGroup.name;
+  } else {
+    document.getElementById('pinInput').value = '';
+    alert('Incorrect PIN. Try again.');
+  }
+}
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
-            authDomain: "farm-appp-4f7f6.firebaseapp.com",
-            databaseURL: "https://farm-appp-4f7f6-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "farm-appp-4f7f6",
-            storageBucket: "farm-appp-4f7f6.firebasestorage.app",
-            messagingSenderId: "637677324102",
-            appId: "1:637677324102:web:f564617ac59012909c0747"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+function renderWorkerList() {
+  db.ref('workers').once('value').then(snap => {
+    const workers = snap.val() ? Object.values(snap.val()).filter(w => w.groupId === activeGroup.id) : [];
+    const list = document.getElementById('workerList');
+    const none = document.getElementById('noWorkers');
+    if (!workers.length) { list.innerHTML=''; none.classList.remove('hidden'); return; }
+    none.classList.add('hidden');
+    list.innerHTML = workers.map((w,i) =>
+      `<div class="worker-item slide-in" style="animation-delay:${i*0.08}s" onclick="pickWorker('${w.id}','${w.name}','${w.initials}')">
+        <div class="avatar">${w.initials}</div>
+        <div style="flex:1"><div class="worker-name">${w.name}</div><div class="worker-sub">Tap to start logging</div></div>
+        <div class="w-arrow">›</div>
+      </div>`).join('');
+  });
+}
 
-        var activeGroup = null,
-            activeWorker = null,
-            activeFarm = null;
-        var lastReceipt = null;
+function pickWorker(id, name, initials) {
+  activeWorker = { id, name, initials };
+  show('screen-farm');
+}
 
-        const treatmentRabbits = {
-            control: [1, 2, 3, 4],
-            t1: [5, 6, 7, 8],
-            t2: [9, 10, 11, 12],
-            t3: [13, 14, 15, 16],
-            t4: [17, 18, 19, 20]
-        };
+function pickFarm(farm) {
+  activeFarm = farm;
+  document.querySelectorAll('.farm-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById('fc-' + farm).classList.add('sel');
+  setTimeout(() => {
+    document.getElementById('workerBanner').textContent =
+      '👤 ' + activeWorker.name + ' · ' + (farm === 'chicken' ? '🐔 Chicken' : '🐇 Rabbit') + ' · ' + activeGroup.name;
+    document.getElementById('form-chicken').classList.toggle('hidden', farm !== 'chicken');
+    document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
+    show('screen-log');
+  }, 200);
+}
 
-        let selectedFeedTreatment = 'control';
-        let selectedWeightTreatment = 'control';
+function pickRabbitFeed(type) {
+  document.getElementById('r_feedtype').value = type;
+  document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('chip-' + type.toLowerCase()).classList.add('active');
+}
 
-        function init() {
-            document.getElementById('headerDate').textContent =
-                new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-            db.ref('groups').on('value', snap => renderGroupList());
-            db.ref('workers').on('value', snap => {
-                if (activeGroup && !document.getElementById('screen-workers').classList.contains('hidden'))
-                    renderWorkerList();
-            });
-            renderGroupList();
-            buildFeedRabbitInputs();
-            buildWeightRabbitInputs();
-            addLitterEntry();
-            addDeathEntry();
-        }
+function selectFeedTreatment(treatment) {
+  selectedFeedTreatment = treatment;
+  document.querySelectorAll('#feedTreatmentChips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`#feedTreatmentChips .chip[data-treatment="${treatment}"]`).classList.add('active');
+  buildFeedRabbitInputs();
+}
 
-        function renderGroupList() {
-            db.ref('groups').once('value').then(snap => {
-                const groups = snap.val() ? Object.values(snap.val()) : [];
-                const list = document.getElementById('groupList');
-                const none = document.getElementById('noGroups');
-                if (!groups.length) { list.innerHTML = '';
-                    none.classList.remove('hidden'); return; }
-                none.classList.add('hidden');
-                list.innerHTML = groups.map((g, i) =>
-                    `<div class="group-select-item slide-in" style="animation-delay:${i*0.08}s" onclick="selectGroup('${g.id}','${g.name}')">
-                <div class="group-sel-icon">${g.name.charAt(0)}</div>
-                <div style="flex:1"><div style="font-weight:700">${g.name}</div><div style="font-size:0.75rem;color:var(--slate)">Tap to log your entry</div></div>
-                <div style="font-size:1.2rem;color:#94a3b8">›</div>
-              </div>`
-                ).join('');
-            });
-        }
+function selectWeightTreatment(treatment) {
+  selectedWeightTreatment = treatment;
+  document.querySelectorAll('#weightTreatmentChips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`#weightTreatmentChips .chip[data-treatment="${treatment}"]`).classList.add('active');
+  buildWeightRabbitInputs();
+}
 
-        function selectGroup(id, name) {
-            db.ref('groups').once('value').then(snap => {
-                const groups = snap.val();
-                const group = groups ? Object.values(groups).find(g => g.id === id) : null;
-                if (!group) return;
-                activeGroup = group;
-                document.getElementById('pinGroupName').textContent = name;
-                document.getElementById('pinInput').value = '';
-                show('screen-pin');
-            });
-        }
+function buildFeedRabbitInputs() {
+  const container = document.getElementById('feedRabbitInputs');
+  const rabbits = treatmentRabbits[selectedFeedTreatment];
+  container.innerHTML = rabbits.map(r => `
+    <div class="entry-row">
+      <span class="feed-row-label">R${r}</span>
+      <input type="number" class="form-input feed-input" id="feed_rabbit_${r}" placeholder="Feed (g)" step="1">
+    </div>
+  `).join('');
+}
 
-        function verifyPin() {
-            const entered = document.getElementById('pinInput').value;
-            const correct = activeGroup.pin || '1234';
-            if (entered === correct) {
-                renderWorkerList();
-                show('screen-workers');
-                document.getElementById('lockedGroupBadge').textContent = activeGroup.name;
-            } else {
-                document.getElementById('pinInput').value = '';
-                alert('Incorrect PIN. Try again.');
-            }
-        }
+function buildWeightRabbitInputs() {
+  const container = document.getElementById('weightRabbitInputs');
+  const rabbits = treatmentRabbits[selectedWeightTreatment];
+  container.innerHTML = rabbits.map(r => `
+    <div class="entry-row">
+      <span class="feed-row-label">R${r}</span>
+      <input type="number" class="form-input feed-input" id="weight_rabbit_${r}" placeholder="Weight (kg)" step="0.01">
+    </div>
+  `).join('');
+}
 
-        function renderWorkerList() {
-            db.ref('workers').once('value').then(snap => {
-                const workers = snap.val() ? Object.values(snap.val()).filter(w => w.groupId === activeGroup.id) : [];
-                const list = document.getElementById('workerList');
-                const none = document.getElementById('noWorkers');
-                if (!workers.length) { list.innerHTML = '';
-                    none.classList.remove('hidden'); return; }
-                none.classList.add('hidden');
-                list.innerHTML = workers.map((w, i) =>
-                    `<div class="worker-item slide-in" style="animation-delay:${i*0.08}s" onclick="pickWorker('${w.id}','${w.name}','${w.initials}')">
-                <div class="avatar">${w.initials}</div>
-                <div style="flex:1"><div class="worker-name">${w.name}</div><div class="worker-sub">Tap to start logging</div></div>
-                <div class="w-arrow">›</div>
-              </div>`
-                ).join('');
-            });
-        }
+function addLitterEntry() {
+  const container = document.getElementById('litterEntries');
+  const div = document.createElement('div');
+  div.className = 'entry-row';
+  // Rabbit select now 1..35
+  let options = '';
+  for (let i=1; i<=35; i++) options += `<option value="${i}">Rabbit ${i}</option>`;
+  div.innerHTML = `
+    <select class="form-input rabbit-select">${options}</select>
+    <input type="number" class="form-input litter-count" placeholder="Litters" min="0">
+    <input type="number" class="form-input kit-count" placeholder="Kits" min="0">
+    <button class="remove-entry" type="button" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(div);
+}
 
-        function pickWorker(id, name, initials) {
-            activeWorker = { id, name, initials };
-            show('screen-farm');
-        }
+function addDeathEntry() {
+  const container = document.getElementById('deathEntries');
+  const div = document.createElement('div');
+  div.className = 'entry-row';
+  let options = '';
+  for (let i=1; i<=35; i++) options += `<option value="${i}">Rabbit ${i}</option>`;
+  div.innerHTML = `
+    <select class="form-input death-category">
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+      <option value="weaner">Weaner</option>
+      <option value="kit">Kit</option>
+    </select>
+    <select class="form-input rabbit-select">${options}</select>
+    <input type="number" class="form-input death-count" placeholder="Count" min="0">
+    <button class="remove-entry" type="button" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(div);
+}
 
-        function pickFarm(farm) {
-            activeFarm = farm;
-            document.querySelectorAll('.farm-card').forEach(c => c.classList.remove('sel'));
-            document.getElementById('fc-' + farm).classList.add('sel');
-            setTimeout(() => {
-                document.getElementById('workerBanner').textContent =
-                    '👤 ' + activeWorker.name + ' · ' + (farm === 'chicken' ? '🐔 Chicken' : '🐇 Rabbit') + ' · ' +
-                    activeGroup.name;
-                document.getElementById('form-chicken').classList.toggle('hidden', farm !== 'chicken');
-                document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
-                show('screen-log');
-            }, 200);
-        }
+function adj(id, delta) {
+  const hidden = document.getElementById(id);
+  const display = document.getElementById(id + '_d');
+  let current = parseInt(display.value) || 0;
+  current = Math.max(0, current + delta);
+  display.value = current;
+  hidden.value = current;
+}
 
-        function pickRabbitFeed(type) {
-            document.getElementById('r_feedtype').value = type;
-            document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));
-            document.getElementById('chip-' + type.toLowerCase()).classList.add('active');
-        }
+function submitLog(farm) {
+  if (farm === 'chicken') {
+    if (!document.getElementById('c_birds').value) { alert('Enter number of birds'); return; }
+  } else {
+    if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
+    if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
+    if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
+    if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
+  }
 
-        function selectFeedTreatment(treatment) {
-            selectedFeedTreatment = treatment;
-            document.querySelectorAll('#feedTreatmentChips .chip').forEach(c => c.classList.remove('active'));
-            document.querySelector(`#feedTreatmentChips .chip[data-treatment="${treatment}"]`).classList.add('active');
-            buildFeedRabbitInputs();
-        }
+  document.getElementById('loadingOverlay').classList.remove('hidden');
 
-        function selectWeightTreatment(treatment) {
-            selectedWeightTreatment = treatment;
-            document.querySelectorAll('#weightTreatmentChips .chip').forEach(c => c.classList.remove('active'));
-            document.querySelector(`#weightTreatmentChips .chip[data-treatment="${treatment}"]`).classList.add('active');
-            buildWeightRabbitInputs();
-        }
+  const log = {
+    id: 'L' + Date.now(),
+    date: new Date().toISOString(),
+    farm,
+    groupId: activeGroup.id,
+    groupName: activeGroup.name,
+    workerId: activeWorker.id,
+    workerName: activeWorker.name
+  };
 
-        // Build per-rabbit feed inputs (no water – water is now per group)
-        function buildFeedRabbitInputs() {
-            const container = document.getElementById('feedRabbitInputs');
-            const rabbits = treatmentRabbits[selectedFeedTreatment];
-            container.innerHTML = rabbits.map(r => `
-            <div class="entry-row">
-              <span class="feed-row-label">R${r}</span>
-              <input type="number" class="form-input feed-input" id="feed_rabbit_${r}" placeholder="Feed (g)" step="1">
-            </div>
-          `).join('');
-        }
+  if (farm === 'chicken') {
+    log.birds = parseInt(document.getElementById('c_birds').value) || 0;
+    log.eggsGood = parseInt(document.getElementById('c_good_d').value) || 0;
+    log.eggsCracked = parseInt(document.getElementById('c_cracked_d').value) || 0;
+    log.eggsShelless = parseInt(document.getElementById('c_shelless_d').value) || 0;
+    log.eggsBroken = parseInt(document.getElementById('c_broken_d').value) || 0;
+    log.cratesSold = parseFloat(document.getElementById('c_crates').value) || 0;
+    log.cratesRevenue = parseFloat(document.getElementById('c_revenue').value) || 0;
+    log.deaths = parseInt(document.getElementById('c_deaths_d').value) || 0;
+    log.cause = document.getElementById('c_cause').value;
+  } else {
+    log.rMale = parseInt(document.getElementById('r_male').value) || 0;
+    log.rFemale = parseInt(document.getElementById('r_female').value) || 0;
+    log.rWeaners = parseInt(document.getElementById('r_weaners').value) || 0;
+    log.rKits = parseInt(document.getElementById('r_kits').value) || 0;
 
-        function buildWeightRabbitInputs() {
-            const container = document.getElementById('weightRabbitInputs');
-            const rabbits = treatmentRabbits[selectedWeightTreatment];
-            container.innerHTML = rabbits.map(r => `
-            <div class="entry-row">
-              <span class="feed-row-label">R${r}</span>
-              <input type="number" class="form-input feed-input" id="weight_rabbit_${r}" placeholder="Weight (kg)" step="0.01">
-            </div>
-          `).join('');
-        }
+    // Group water
+    log.groupWaterLitres = parseFloat(document.getElementById('r_group_water').value) || 0;
 
-        function addLitterEntry() {
-            const container = document.getElementById('litterEntries');
-            const div = document.createElement('div');
-            div.className = 'entry-row';
-            div.innerHTML = `
-            <select class="form-input rabbit-select">
-              ${Array.from({length:20},(_,i)=>`<option value="${i+1}">Rabbit ${i+1}</option>`).join('')}
-            </select>
-            <input type="number" class="form-input litter-count" placeholder="Litters" min="0">
-            <input type="number" class="form-input kit-count" placeholder="Kits" min="0">
-            <button class="remove-entry" type="button" onclick="this.parentElement.remove()">×</button>
-          `;
-            container.appendChild(div);
-        }
+    // Feed per rabbit (no water)
+    const feedEntries = [];
+    for (let r = 1; r <= 35; r++) {
+      const feedInput = document.getElementById(`feed_rabbit_${r}`);
+      if (feedInput && feedInput.value !== '') {
+        feedEntries.push({
+          rabbit: r,
+          feedGrams: parseFloat(feedInput.value) || 0
+        });
+      }
+    }
 
-        function addDeathEntry() {
-            const container = document.getElementById('deathEntries');
-            const div = document.createElement('div');
-            div.className = 'entry-row';
-            div.innerHTML = `
-            <select class="form-input death-category">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="weaner">Weaner</option>
-              <option value="kit">Kit</option>
-            </select>
-            <select class="form-input rabbit-select">
-              ${Array.from({length:20},(_,i)=>`<option value="${i+1}">Rabbit ${i+1}</option>`).join('')}
-            </select>
-            <input type="number" class="form-input death-count" placeholder="Count" min="0">
-            <button class="remove-entry" type="button" onclick="this.parentElement.remove()">×</button>
-          `;
-            container.appendChild(div);
-        }
+    // Weight entries
+    const weightEntries = [];
+    for (let r = 1; r <= 35; r++) {
+      const input = document.getElementById(`weight_rabbit_${r}`);
+      if (input && input.value !== '') {
+        weightEntries.push({
+          rabbit: r,
+          weightKg: parseFloat(input.value) || 0
+        });
+      }
+    }
 
-        function adj(id, delta) {
-            const hidden = document.getElementById(id);
-            const display = document.getElementById(id + '_d');
-            let current = parseInt(display.value) || 0;
-            current = Math.max(0, current + delta);
-            display.value = current;
-            hidden.value = current;
-        }
+    // Litter entries
+    const litterEntries = [];
+    document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
+      const rabbit = row.querySelector('.rabbit-select').value;
+      const litters = parseFloat(row.querySelector('.litter-count').value) || 0;
+      const kits = parseFloat(row.querySelector('.kit-count').value) || 0;
+      if (litters > 0 || kits > 0) {
+        litterEntries.push({ rabbit, litters, kits });
+      }
+    });
 
-        function submitLog(farm) {
-            // Validation
-            if (farm === 'chicken') {
-                if (!document.getElementById('c_birds').value) { alert('Enter number of birds'); return; }
-            } else {
-                if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
-                if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
-                if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
-                if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
-            }
+    // Death entries
+    const deathEntries = [];
+    document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
+      const category = row.querySelector('.death-category').value;
+      const rabbit = row.querySelector('.rabbit-select').value;
+      const count = parseFloat(row.querySelector('.death-count').value) || 0;
+      if (count > 0) {
+        deathEntries.push({ category, rabbit, count });
+      }
+    });
 
-            document.getElementById('loadingOverlay').classList.remove('hidden');
+    const dMale = deathEntries.filter(d => d.category === 'male').reduce((s, d) => s + d.count, 0);
+    const dFemale = deathEntries.filter(d => d.category === 'female').reduce((s, d) => s + d.count, 0);
+    const dWeaners = deathEntries.filter(d => d.category === 'weaner').reduce((s, d) => s + d.count, 0);
+    const dKits = deathEntries.filter(d => d.category === 'kit').reduce((s, d) => s + d.count, 0);
 
-            const log = {
-                id: 'L' + Date.now(),
-                date: new Date().toISOString(),
-                farm,
-                groupId: activeGroup.id,
-                groupName: activeGroup.name,
-                workerId: activeWorker.id,
-                workerName: activeWorker.name
-            };
+    log.feedType = document.getElementById('r_feedtype').value;
+    log.feedEntries = feedEntries;
+    log.weekNum = parseInt(document.getElementById('r_weeknum').value) || null;
+    log.weightEntries = weightEntries;
+    log.matingDate = document.getElementById('r_mating').value || null;
+    log.rabbitsMated = parseInt(document.getElementById('r_mated_count').value) || 0;
+    log.edd = document.getElementById('r_edd').value || null;
+    log.deliveryDate = document.getElementById('r_delivery_date').value || null;
+    // ❌ expectedAtBirth removed
+    log.litterEntries = litterEntries;
+    log.litters = litterEntries.reduce((s, e) => s + e.litters, 0);
+    log.newKits = litterEntries.reduce((s, e) => s + e.kits, 0);
+    log.rabbitsSold = parseInt(document.getElementById('r_sold_d').value) || 0;
+    log.boughtAdultMale = parseInt(document.getElementById('r_bought_adult_male_d').value) || 0;
+    log.boughtAdultFemale = parseInt(document.getElementById('r_bought_adult_female_d').value) || 0;
+    log.boughtWeaners = parseInt(document.getElementById('r_bought_weaners_d').value) || 0;
+    log.boughtKits = parseInt(document.getElementById('r_bought_kits_d').value) || 0;
+    log.deathEntries = deathEntries;
+    log.dMale = dMale;
+    log.dFemale = dFemale;
+    log.dWeaners = dWeaners;
+    log.dKits = dKits;
+    log.deaths = dMale + dFemale + dWeaners + dKits;
+    log.cause = document.getElementById('r_cause') ? document.getElementById('r_cause').value : '';
+  }
 
-            if (farm === 'chicken') {
-                log.birds = parseInt(document.getElementById('c_birds').value) || 0;
-                log.eggsGood = parseInt(document.getElementById('c_good_d').value) || 0;
-                log.eggsCracked = parseInt(document.getElementById('c_cracked_d').value) || 0;
-                log.eggsShelless = parseInt(document.getElementById('c_shelless_d').value) || 0;
-                log.eggsBroken = parseInt(document.getElementById('c_broken_d').value) || 0;
-                log.cratesSold = parseFloat(document.getElementById('c_crates').value) || 0;
-                log.cratesRevenue = parseFloat(document.getElementById('c_revenue').value) || 0;
-                log.deaths = parseInt(document.getElementById('c_deaths_d').value) || 0;
-                log.cause = document.getElementById('c_cause').value;
-            } else {
-                log.rMale = parseInt(document.getElementById('r_male').value) || 0;
-                log.rFemale = parseInt(document.getElementById('r_female').value) || 0;
-                log.rWeaners = parseInt(document.getElementById('r_weaners').value) || 0;
-                log.rKits = parseInt(document.getElementById('r_kits').value) || 0;
+  db.ref('logs').push(log).then(() => {
+    lastReceipt = log;
+    showReceipt(log);
+  }).finally(() => {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  });
+}
 
-                // --- GROUP WATER (new) ---
-                log.groupWaterLitres = parseFloat(document.getElementById('r_group_water').value) || 0;
+function showReceipt(log) {
+  const dt = new Date(log.date);
+  const dateStr = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const isC = log.farm === 'chicken';
+  let body = '';
 
-                // Feed per rabbit (water removed from per-rabbit)
-                const feedEntries = [];
-                for (let r = 1; r <= 20; r++) {
-                    const feedInput = document.getElementById(`feed_rabbit_${r}`);
-                    if (feedInput && feedInput.value !== '') {
-                        feedEntries.push({
-                            rabbit: r,
-                            feedGrams: parseFloat(feedInput.value) || 0
-                        });
-                    }
-                }
+  const rr = (label,val,cls) => `<div class="receipt-row"><span class="receipt-label">${label}</span><span class="receipt-val ${cls||''}">${val}</span></div>`;
+  const rg = (title,rows) => `<div class="receipt-group"><div class="receipt-group-title">${title}</div>${rows}</div>`;
 
-                // Weight entries
-                const weightEntries = [];
-                for (let r = 1; r <= 20; r++) {
-                    const input = document.getElementById(`weight_rabbit_${r}`);
-                    if (input && input.value !== '') {
-                        weightEntries.push({
-                            rabbit: r,
-                            weightKg: parseFloat(input.value) || 0
-                        });
-                    }
-                }
+  body += rg('📅 Info', rr('Date',dateStr)+rr('Time',timeStr)+rr('Group',log.groupName)+rr('Worker',log.workerName)+rr('Farm',isC?'Chicken Farm':'Rabbit Farm')+rr('Entry ID',log.id));
 
-                // Litter entries
-                const litterEntries = [];
-                document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
-                    const rabbit = row.querySelector('.rabbit-select').value;
-                    const litters = parseFloat(row.querySelector('.litter-count').value) || 0;
-                    const kits = parseFloat(row.querySelector('.kit-count').value) || 0;
-                    if (litters > 0 || kits > 0) {
-                        litterEntries.push({ rabbit, litters, kits });
-                    }
-                });
+  if (isC) {
+    body += rg('🐔 Production', rr('Birds Met',log.birds)+rr('Good Eggs',log.eggsGood,'highlight')+rr('Cracked',log.eggsCracked)+rr('Shelless',log.eggsShelless)+rr('Broken',log.eggsBroken)+rr('Crates',log.cratesSold)+rr('Revenue','₦'+Number(log.cratesRevenue).toLocaleString(),'highlight')+rr('Deaths',log.deaths,log.deaths>0?'danger':'')+(log.cause?rr('Cause',log.cause):''));
+  } else {
+    body += rg('🐇 Animals Met', rr('Males',log.rMale)+rr('Females',log.rFemale)+rr('Weaners',log.rWeaners)+rr('Kits',log.rKits));
 
-                // Death entries
-                const deathEntries = [];
-                document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
-                    const category = row.querySelector('.death-category').value;
-                    const rabbit = row.querySelector('.rabbit-select').value;
-                    const count = parseFloat(row.querySelector('.death-count').value) || 0;
-                    if (count > 0) {
-                        deathEntries.push({ category, rabbit, count });
-                    }
-                });
+    // Group water
+    body += rg('💧 Water', rr('Group Water (Litres)', log.groupWaterLitres || 0, 'highlight'));
 
-                const dMale = deathEntries.filter(d => d.category === 'male').reduce((s, d) => s + d.count, 0);
-                const dFemale = deathEntries.filter(d => d.category === 'female').reduce((s, d) => s + d.count, 0);
-                const dWeaners = deathEntries.filter(d => d.category === 'weaner').reduce((s, d) => s + d.count, 0);
-                const dKits = deathEntries.filter(d => d.category === 'kit').reduce((s, d) => s + d.count, 0);
+    if (log.feedEntries && log.feedEntries.length > 0) {
+      let feedStr = log.feedEntries.map(e => `R${e.rabbit}: ${e.feedGrams}g`).join('<br>');
+      body += rg('🌾 Feed per Rabbit', `<div class="receipt-row"><span>${feedStr}</span></div>`);
+    }
+    if (log.weightEntries && log.weightEntries.length > 0) {
+      let wStr = log.weightEntries.map(e => `R${e.rabbit}: ${e.weightKg}kg`).join('<br>');
+      body += rg('⚖️ Weight per Rabbit', `<div class="receipt-row"><span>${wStr}</span></div>`);
+    }
+    if (log.litterEntries && log.litterEntries.length > 0) {
+      let lStr = log.litterEntries.map(e => `R${e.rabbit}: ${e.litters} litters, ${e.kits} kits`).join('<br>');
+      body += rg('🐣 Litters & Kits per Rabbit', `<div class="receipt-row"><span>${lStr}</span></div>`);
+    }
+    if (log.deathEntries && log.deathEntries.length > 0) {
+      let dStr = log.deathEntries.map(e => `${e.category} R${e.rabbit}: ${e.count}`).join('<br>');
+      body += rg('💀 Mortality per Rabbit', `<div class="receipt-row"><span>${dStr}</span></div>`);
+    }
+    body += rg('💰 Sales', rr('Rabbits Sold',log.rabbitsSold||0));
+    body += rg('🛒 Bought', rr('Adult Males',log.boughtAdultMale||0)+rr('Adult Females',log.boughtAdultFemale||0)+rr('Weaners',log.boughtWeaners||0)+rr('Kits',log.boughtKits||0));
+  }
 
-                log.feedType = document.getElementById('r_feedtype').value;
-                log.feedEntries = feedEntries;
-                log.weekNum = parseInt(document.getElementById('r_weeknum').value) || null;
-                log.weightEntries = weightEntries;
-                log.matingDate = document.getElementById('r_mating').value || null;
-                log.rabbitsMated = parseInt(document.getElementById('r_mated_count').value) || 0;
-                log.edd = document.getElementById('r_edd').value || null;
-                log.deliveryDate = document.getElementById('r_delivery_date').value || null;
-                // ❌ expectedAtBirth removed
-                log.litterEntries = litterEntries;
-                log.litters = litterEntries.reduce((s, e) => s + e.litters, 0);
-                log.newKits = litterEntries.reduce((s, e) => s + e.kits, 0);
-                log.rabbitsSold = parseInt(document.getElementById('r_sold_d').value) || 0;
-                log.boughtAdultMale = parseInt(document.getElementById('r_bought_adult_male_d').value) || 0;
-                log.boughtAdultFemale = parseInt(document.getElementById('r_bought_adult_female_d').value) || 0;
-                log.boughtWeaners = parseInt(document.getElementById('r_bought_weaners_d').value) || 0;
-                log.boughtKits = parseInt(document.getElementById('r_bought_kits_d').value) || 0;
-                log.deathEntries = deathEntries;
-                log.dMale = dMale;
-                log.dFemale = dFemale;
-                log.dWeaners = dWeaners;
-                log.dKits = dKits;
-                log.deaths = dMale + dFemale + dWeaners + dKits;
-                log.cause = document.getElementById('r_cause') ? document.getElementById('r_cause').value : '';
-            }
+  document.getElementById('receiptCard').innerHTML =
+    `<div class="receipt-header"><div class="receipt-header-icon">${isC?'🐔':'🐇'}</div><h2>Log Submitted</h2><div class="receipt-header-sub">${log.groupName} · ${log.workerName}</div></div>
+    <div class="receipt-body">${body}</div>
+    <div class="receipt-footer"><div style="font-weight:600;margin-bottom:4px">Entry locked — cannot be modified</div><div class="receipt-stamp">✅ Saved to Database</div></div>`;
+  show('screen-receipt');
+}
 
-            db.ref('logs').push(log).then(() => {
-                lastReceipt = log;
-                showReceipt(log);
-            }).finally(() => {
-                document.getElementById('loadingOverlay').classList.add('hidden');
-            });
-        }
+function notifySupervisor() {
+  const message = encodeURIComponent("Good day sir, these are the activities that occurred on the farm today. Please check the dashboard.");
+  window.open('https://wa.me/2348132146857?text=' + message, '_blank');
+}
 
-        function showReceipt(log) {
-            const dt = new Date(log.date);
-            const dateStr = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric',
-                year: 'numeric' });
-            const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            const isC = log.farm === 'chicken';
-            let body = '';
+function show(id) {
+  ['screen-group','screen-pin','screen-workers','screen-farm','screen-log','screen-receipt'].forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
+}
 
-            const rr = (label, val, cls) =>
-                `<div class="receipt-row"><span class="receipt-label">${label}</span><span class="receipt-val ${cls||''}">${val}</span></div>`;
-            const rg = (title, rows) =>
-                `<div class="receipt-group"><div class="receipt-group-title">${title}</div>${rows}</div>`;
+function backToGroups() { activeGroup=null; activeWorker=null; activeFarm=null; renderGroupList(); show('screen-group'); }
+function backToWorkers() { activeWorker=null; activeFarm=null; show('screen-workers'); }
+function backToFarm() { activeFarm=null; show('screen-farm'); }
 
-            body += rg('📅 Info', rr('Date', dateStr) + rr('Time', timeStr) + rr('Group', log.groupName) + rr('Worker', log
-                .workerName) + rr('Farm', isC ? 'Chicken Farm' : 'Rabbit Farm') + rr('Entry ID', log.id));
+function startOver() {
+  ['c_birds','c_crates','c_revenue','c_cause','r_male','r_female','r_weaners','r_kits','r_weeknum','r_mating','r_mated_count','r_edd','r_delivery_date','r_cause','r_group_water'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['c_good','c_cracked','c_shelless','c_broken','c_deaths','r_sold','r_bought_adult_male','r_bought_adult_female','r_bought_weaners','r_bought_kits'].forEach(id => {
+    const hidden = document.getElementById(id); if (hidden) hidden.value = 0;
+    const display = document.getElementById(id + '_d'); if (display) display.value = 0;
+  });
+  // Clear rabbit feed & weight inputs (1..35)
+  for (let r = 1; r <= 35; r++) {
+    const feed = document.getElementById(`feed_rabbit_${r}`);
+    if (feed) feed.value = '';
+    const weight = document.getElementById(`weight_rabbit_${r}`);
+    if (weight) weight.value = '';
+  }
+  document.getElementById('litterEntries').innerHTML = '';
+  document.getElementById('deathEntries').innerHTML = '';
+  addLitterEntry();
+  addDeathEntry();
+  document.getElementById('r_feedtype').value = '';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  // Re-activate default treatments
+  document.querySelector('#feedTreatmentChips .chip[data-treatment="control"]')?.classList.add('active');
+  document.querySelector('#weightTreatmentChips .chip[data-treatment="control"]')?.classList.add('active');
+  selectedFeedTreatment = 'control';
+  selectedWeightTreatment = 'control';
+  buildFeedRabbitInputs();
+  buildWeightRabbitInputs();
+  activeFarm = null;
+  show('screen-farm');
+}
 
-            if (isC) {
-                body += rg('🐔 Production', rr('Birds Met', log.birds) + rr('Good Eggs', log.eggsGood, 'highlight') + rr(
-                    'Cracked', log.eggsCracked) + rr('Shelless', log.eggsShelless) + rr('Broken', log.eggsBroken) + rr(
-                    'Crates', log.cratesSold) + rr('Revenue', '₦' + Number(log.cratesRevenue).toLocaleString(),
-                    'highlight') + rr('Deaths', log.deaths, log.deaths > 0 ? 'danger' : '') + (log.cause ? rr('Cause',
-                        log.cause) : ''));
-            } else {
-                body += rg('🐇 Animals Met', rr('Males', log.rMale) + rr('Females', log.rFemale) + rr('Weaners', log
-                    .rWeaners) + rr('Kits', log.rKits));
-
-                // Show group water (new)
-                body += rg('💧 Water', rr('Group Water (Litres)', log.groupWaterLitres || 0, 'highlight'));
-
-                if (log.feedEntries && log.feedEntries.length > 0) {
-                    let feedStr = log.feedEntries.map(e => `R${e.rabbit}: ${e.feedGrams}g`).join('<br>');
-                    body += rg('🌾 Feed per Rabbit', `<div class="receipt-row"><span>${feedStr}</span></div>`);
-                }
-                if (log.weightEntries && log.weightEntries.length > 0) {
-                    let wStr = log.weightEntries.map(e => `R${e.rabbit}: ${e.weightKg}kg`).join('<br>');
-                    body += rg('⚖️ Weight per Rabbit', `<div class="receipt-row"><span>${wStr}</span></div>`);
-                }
-                if (log.litterEntries && log.litterEntries.length > 0) {
-                    let lStr = log.litterEntries.map(e => `R${e.rabbit}: ${e.litters} litters, ${e.kits} kits`).join(
-                    '<br>');
-                    body += rg('🐣 Litters & Kits per Rabbit', `<div class="receipt-row"><span>${lStr}</span></div>`);
-                }
-                if (log.deathEntries && log.deathEntries.length > 0) {
-                    let dStr = log.deathEntries.map(e => `${e.category} R${e.rabbit}: ${e.count}`).join('<br>');
-                    body += rg('💀 Mortality per Rabbit', `<div class="receipt-row"><span>${dStr}</span></div>`);
-                }
-                body += rg('💰 Sales', rr('Rabbits Sold', log.rabbitsSold || 0));
-                body += rg('🛒 Bought', rr('Adult Males', log.boughtAdultMale || 0) + rr('Adult Females', log
-                    .boughtAdultFemale || 0) + rr('Weaners', log.boughtWeaners || 0) + rr('Kits', log.boughtKits ||
-                    0));
-            }
-
-            document.getElementById('receiptCard').innerHTML =
-                `<div class="receipt-header"><div class="receipt-header-icon">${isC?'🐔':'🐇'}</div><h2>Log Submitted</h2><div class="receipt-header-sub">${log.groupName} · ${log.workerName}</div></div>
-            <div class="receipt-body">${body}</div>
-            <div class="receipt-footer"><div style="font-weight:600;margin-bottom:4px">Entry locked — cannot be modified</div><div class="receipt-stamp">✅ Saved to Database</div></div>`;
-            show('screen-receipt');
-        }
-
-        function notifySupervisor() {
-            const message = encodeURIComponent(
-                "Good day sir, these are the activities that occurred on the farm today. Please check the dashboard."
-                );
-            window.open('https://wa.me/2348132146857?text=' + message, '_blank');
-        }
-
-        function show(id) {
-            ['screen-group', 'screen-pin', 'screen-workers', 'screen-farm', 'screen-log', 'screen-receipt'].forEach(s =>
-                document.getElementById(s).classList.toggle('hidden', s !== id));
-        }
-
-        function backToGroups() { activeGroup = null;
-            activeWorker = null;
-            activeFarm = null;
-            renderGroupList();
-            show('screen-group'); }
-
-        function backToWorkers() { activeWorker = null;
-            activeFarm = null;
-            show('screen-workers'); }
-
-        function backToFarm() { activeFarm = null;
-            show('screen-farm'); }
-
-        function startOver() {
-            ['c_birds', 'c_crates', 'c_revenue', 'c_cause', 'r_male', 'r_female', 'r_weaners', 'r_kits', 'r_weeknum',
-                'r_mating', 'r_mated_count', 'r_edd', 'r_delivery_date', 'r_cause', 'r_group_water'
-            ].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-            ['c_good', 'c_cracked', 'c_shelless', 'c_broken', 'c_deaths', 'r_sold', 'r_bought_adult_male',
-                'r_bought_adult_female', 'r_bought_weaners', 'r_bought_kits'
-            ].forEach(id => {
-                const hidden = document.getElementById(id);
-                if (hidden) hidden.value = 0;
-                const display = document.getElementById(id + '_d');
-                if (display) display.value = 0;
-            });
-            // Clear rabbit feed & weight inputs
-            for (let r = 1; r <= 20; r++) {
-                const feed = document.getElementById(`feed_rabbit_${r}`);
-                if (feed) feed.value = '';
-                const weight = document.getElementById(`weight_rabbit_${r}`);
-                if (weight) weight.value = '';
-            }
-            document.getElementById('litterEntries').innerHTML = '';
-            document.getElementById('deathEntries').innerHTML = '';
-            addLitterEntry();
-            addDeathEntry();
-            document.getElementById('r_feedtype').value = '';
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            // Re-activate default treatments
-            document.querySelector('#feedTreatmentChips .chip[data-treatment="control"]')?.classList.add('active');
-            document.querySelector('#weightTreatmentChips .chip[data-treatment="control"]')?.classList.add('active');
-            selectedFeedTreatment = 'control';
-            selectedWeightTreatment = 'control';
-            buildFeedRabbitInputs();
-            buildWeightRabbitInputs();
-            activeFarm = null;
-            show('screen-farm');
-        }
-
-        init();
-    </script>
+init();
+</script>
 </body>
 </html>
