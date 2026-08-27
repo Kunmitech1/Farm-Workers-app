@@ -153,7 +153,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToFarm()">← Change Farm</button></div>
   <div id="workerBanner" style="margin:0 18px;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:14px;padding:14px 16px;font-weight:700;font-size:0.9rem"></div>
 
-  <!-- CHICKEN FORM (unchanged) -->
+  <!-- CHICKEN FORM -->
   <div id="form-chicken" class="hidden">
     <div class="card">
       <div class="section-label">🐔 Birds Met Today</div>
@@ -183,7 +183,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div style="padding:0 18px 24px"><button class="btn btn-primary" onclick="submitLog('chicken')">✅ Submit Chicken Log</button></div>
   </div>
 
-  <!-- RABBIT FORM – NEW MULTI-TREATMENT LAYOUT -->
+  <!-- RABBIT FORM – HORIZONTAL TREATMENT CHIPS + PERSISTENT DATA -->
   <div id="form-rabbit" class="hidden">
     <div class="card">
       <div class="section-label">🐇 Animals Met Today (Required)</div>
@@ -197,7 +197,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       </div>
     </div>
 
-    <!-- FEED & WATER – now all treatments shown together -->
+    <!-- FEED & WATER -->
     <div class="card">
       <div class="section-label">🌾 Feed & Water (Optional)</div>
       <div class="form-group">
@@ -209,18 +209,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <input type="hidden" id="r_feedtype" value="Growers">
       </div>
 
-      <!-- Treatment sections -->
-      <div id="allTreatmentsFeed"></div>
+      <!-- Treatment Selection Chips (Horizontal) -->
+      <div class="form-group">
+        <div class="form-label">Select Treatment</div>
+        <div class="chip-group" id="feedTreatmentChips"></div>
+      </div>
+
+      <!-- Water & Feed Inputs for selected treatment -->
+      <div class="water-group-wrap">
+        <div class="water-group-label"><span>💧</span> Water Intake (per treatment)</div>
+        <div class="form-group" style="margin-bottom:0">
+          <input type="number" step="0.1" class="form-input" id="r_group_water" placeholder="Litres for this treatment" style="max-width:220px;">
+        </div>
+      </div>
+      <div id="feedRabbitInputs"></div>
     </div>
 
-    <!-- WEEKLY WEIGHT – all treatments together -->
+    <!-- WEEKLY WEIGHT -->
     <div class="card">
       <div class="section-label">⚖️ Weekly Weight (Optional)</div>
       <div class="form-group"><div class="form-label">Week Number</div><input type="number" class="form-input" id="r_weeknum" placeholder="e.g. 6"></div>
-      <div id="allTreatmentsWeight"></div>
+      
+      <!-- Treatment Selection Chips (Horizontal) -->
+      <div class="form-group">
+        <div class="form-label">Select Treatment</div>
+        <div class="chip-group" id="weightTreatmentChips"></div>
+      </div>
+      
+      <div id="weightRabbitInputs"></div>
     </div>
 
-    <!-- MATING (unchanged) -->
+    <!-- MATING (Expected at Birth removed) -->
     <div class="card">
       <div class="section-label">❤️ Mating (Optional)</div>
       <div class="form-group"><div class="form-label">Date of Mating</div><input type="date" class="form-input" id="r_mating"></div>
@@ -229,20 +248,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="form-group"><div class="form-label">Delivery Date</div><input type="date" class="form-input" id="r_delivery_date"></div>
     </div>
 
-    <!-- LITTERS & KITS (unchanged) -->
+    <!-- LITTERS & KITS -->
     <div class="card">
       <div class="section-label">🐣 Litters & Kits Born (Optional)</div>
       <div id="litterEntries"></div>
       <button class="add-btn" type="button" onclick="addLitterEntry()">+ Add Litter/Kits Entry</button>
     </div>
 
-    <!-- RABBITS SOLD (unchanged) -->
+    <!-- RABBITS SOLD -->
     <div class="card">
       <div class="section-label">💰 Rabbits Sold (Optional)</div>
       <div class="form-group"><div class="form-label">Number Sold</div><div class="stepper"><button class="step-btn" onclick="adj('r_sold',-1)">−</button><input type="number" class="step-val" id="r_sold_d" value="0" min="0" inputmode="numeric"><button class="step-btn" onclick="adj('r_sold',1)">+</button></div><input type="hidden" id="r_sold" value="0"></div>
     </div>
 
-    <!-- RABBITS BOUGHT (unchanged) -->
+    <!-- RABBITS BOUGHT -->
     <div class="card">
       <div class="section-label">🛒 Rabbits Bought (Optional)</div>
       <div class="two-col">
@@ -255,7 +274,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       </div>
     </div>
 
-    <!-- MORTALITY (unchanged) -->
+    <!-- MORTALITY -->
     <div class="card">
       <div class="section-label">💀 Mortality (Optional – add per rabbit)</div>
       <div id="deathEntries"></div>
@@ -300,17 +319,35 @@ const db = firebase.database();
 var activeGroup = null, activeWorker = null, activeFarm = null;
 var lastReceipt = null;
 
-// Treatment definitions
-const treatments = [
-  { id: 'control', label: 'Control', rabbits: [1,2,3,4,5,6] },
-  { id: 't1', label: 'Treatment 1', rabbits: [7,8,9,10,11] },
-  { id: 't2', label: 'Treatment 2', rabbits: [12,13,14,15,16] },
-  { id: 't3', label: 'Treatment 3', rabbits: [17,18,19,20,21] },
-  { id: 't4', label: 'Treatment 4', rabbits: [22,23,24,25,26] },
-  { id: 't5', label: 'Treatment 5', rabbits: [27,28,29,30,31] },
-  { id: 't6', label: 'Treatment 6', rabbits: [32,33,34,35,36] }
+// ---- TREATMENT CONFIGURATION ----
+// Control: 5 rabbits, T1-T3: 5 each, T4: 6 rabbits, T5-T6: 5 each
+const treatmentConfigs = [
+  { id: 'control', label: 'Control', count: 5 },
+  { id: 't1', label: 'Treatment 1', count: 5 },
+  { id: 't2', label: 'Treatment 2', count: 5 },
+  { id: 't3', label: 'Treatment 3', count: 5 },
+  { id: 't4', label: 'Treatment 4', count: 6 },
+  { id: 't5', label: 'Treatment 5', count: 5 },
+  { id: 't6', label: 'Treatment 6', count: 5 }
 ];
 
+// Generate sequential rabbit IDs for each treatment
+let rabbitCounter = 1;
+const treatments = treatmentConfigs.map(t => {
+  const rabbits = [];
+  for (let i = 0; i < t.count; i++) {
+    rabbits.push(rabbitCounter++);
+  }
+  return { ...t, rabbits };
+});
+
+// ---- STATE MANAGEMENT ----
+let feedWaterData = {}; // { treatmentId: { water: '', rabbits: { '1': '', '2': '' } } }
+let weightData = {};    // { treatmentId: { rabbits: { '1': '', '2': '' } } }
+let selectedFeedTreatment = 'control';
+let selectedWeightTreatment = 'control';
+
+// ---- INIT ----
 function init() {
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -320,36 +357,196 @@ function init() {
       renderWorkerList();
   });
   renderGroupList();
-  buildAllTreatments();
+  initTreatmentChips();
   addLitterEntry();
   addDeathEntry();
 }
 
-// Build all feed & weight sections for all treatments
-function buildAllTreatments() {
-  const feedContainer = document.getElementById('allTreatmentsFeed');
-  const weightContainer = document.getElementById('allTreatmentsWeight');
-  let feedHTML = '', weightHTML = '';
+// ---- TREATMENT CHIPS ----
+function initTreatmentChips() {
+  const feedContainer = document.getElementById('feedTreatmentChips');
+  const weightContainer = document.getElementById('weightTreatmentChips');
+  
+  let feedHtml = '', weightHtml = '';
   treatments.forEach(t => {
-    // Feed section
-    feedHTML += `<div class="treatment-section"><div class="treatment-title"><span>${t.label}</span><span class="badge">${t.rabbits.length} rabbits</span></div>`;
-    // Water input per treatment
-    feedHTML += `<div class="water-group-wrap" style="margin:4px 0 12px;"><div class="water-group-label"><span>💧</span> Water (L) for ${t.label}</div><input type="number" step="0.1" class="form-input" id="water_${t.id}" placeholder="Litres" style="max-width:160px;margin:0 auto;"></div>`;
-    // Rabbit feed inputs
-    t.rabbits.forEach(r => {
-      feedHTML += `<div class="entry-row"><span class="feed-row-label">R${r}</span><input type="number" class="form-input feed-input" id="feed_${t.id}_${r}" placeholder="Feed (g)" step="1"></div>`;
-    });
-    feedHTML += `</div>`;
-
-    // Weight section
-    weightHTML += `<div class="treatment-section"><div class="treatment-title"><span>${t.label}</span><span class="badge">${t.rabbits.length} rabbits</span></div>`;
-    t.rabbits.forEach(r => {
-      weightHTML += `<div class="entry-row"><span class="feed-row-label">R${r}</span><input type="number" class="form-input feed-input" id="weight_${t.id}_${r}" placeholder="Weight (kg)" step="0.01"></div>`;
-    });
-    weightHTML += `</div>`;
+    const feedActive = t.id === 'control' ? 'active' : '';
+    const weightActive = t.id === 'control' ? 'active' : '';
+    feedHtml += `<span class="chip ${feedActive}" data-treatment="${t.id}" onclick="selectFeedTreatment('${t.id}')">${t.label}</span>`;
+    weightHtml += `<span class="chip ${weightActive}" data-treatment="${t.id}" onclick="selectWeightTreatment('${t.id}')">${t.label}</span>`;
   });
-  feedContainer.innerHTML = feedHTML;
-  weightContainer.innerHTML = weightHTML;
+  feedContainer.innerHTML = feedHtml;
+  weightContainer.innerHTML = weightHtml;
+  
+  // Initialize with Control data
+  selectFeedTreatment('control');
+  selectWeightTreatment('control');
+}
+
+// ---- SAVE & RENDER: FEED & WATER ----
+function saveFeedTreatmentData() {
+  const container = document.getElementById('feedRabbitInputs');
+  const waterInput = document.getElementById('r_group_water');
+  if (!container) return;
+  
+  const treatmentId = selectedFeedTreatment;
+  if (!feedWaterData[treatmentId]) feedWaterData[treatmentId] = { water: '', rabbits: {} };
+  
+  if (waterInput) feedWaterData[treatmentId].water = waterInput.value;
+  
+  const inputs = container.querySelectorAll('.rabbit-feed-input');
+  inputs.forEach(input => {
+    const rabbitId = input.dataset.rabbit;
+    feedWaterData[treatmentId].rabbits[rabbitId] = input.value;
+  });
+}
+
+function selectFeedTreatment(treatmentId) {
+  // Save current data before switching
+  saveFeedTreatmentData();
+  
+  const treatment = treatments.find(t => t.id === treatmentId);
+  if (!treatment) return;
+  
+  selectedFeedTreatment = treatmentId;
+  const container = document.getElementById('feedRabbitInputs');
+  const waterInput = document.getElementById('r_group_water');
+  
+  // Ensure data structure exists
+  if (!feedWaterData[treatmentId]) feedWaterData[treatmentId] = { water: '', rabbits: {} };
+  
+  // Populate water
+  waterInput.value = feedWaterData[treatmentId].water || '';
+  
+  // Populate rabbit feed inputs
+  let html = '';
+  treatment.rabbits.forEach(r => {
+    const val = feedWaterData[treatmentId].rabbits[r] || '';
+    html += `<div class="entry-row">
+      <span class="feed-row-label">R${r}</span>
+      <input type="number" class="form-input feed-input rabbit-feed-input" data-rabbit="${r}" placeholder="Feed (g)" step="1" value="${val}" oninput="saveFeedTreatmentData()">
+    </div>`;
+  });
+  container.innerHTML = html;
+  
+  // Update chip active state
+  document.querySelectorAll('#feedTreatmentChips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`#feedTreatmentChips .chip[data-treatment="${treatmentId}"]`).classList.add('active');
+}
+
+// ---- SAVE & RENDER: WEIGHT ----
+function saveWeightTreatmentData() {
+  const container = document.getElementById('weightRabbitInputs');
+  if (!container) return;
+  
+  const treatmentId = selectedWeightTreatment;
+  if (!weightData[treatmentId]) weightData[treatmentId] = { rabbits: {} };
+  
+  const inputs = container.querySelectorAll('.rabbit-weight-input');
+  inputs.forEach(input => {
+    const rabbitId = input.dataset.rabbit;
+    weightData[treatmentId].rabbits[rabbitId] = input.value;
+  });
+}
+
+function selectWeightTreatment(treatmentId) {
+  saveWeightTreatmentData();
+  
+  const treatment = treatments.find(t => t.id === treatmentId);
+  if (!treatment) return;
+  
+  selectedWeightTreatment = treatmentId;
+  const container = document.getElementById('weightRabbitInputs');
+  
+  if (!weightData[treatmentId]) weightData[treatmentId] = { rabbits: {} };
+  
+  let html = '';
+  treatment.rabbits.forEach(r => {
+    const val = weightData[treatmentId].rabbits[r] || '';
+    html += `<div class="entry-row">
+      <span class="feed-row-label">R${r}</span>
+      <input type="number" class="form-input feed-input rabbit-weight-input" data-rabbit="${r}" placeholder="Weight (kg)" step="0.01" value="${val}" oninput="saveWeightTreatmentData()">
+    </div>`;
+  });
+  container.innerHTML = html;
+  
+  document.querySelectorAll('#weightTreatmentChips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`#weightTreatmentChips .chip[data-treatment="${treatmentId}"]`).classList.add('active');
+}
+
+// ---- OTHER FUNCTIONS (Group, Worker, Farm Selection) ----
+function renderGroupList() {
+  db.ref('groups').once('value').then(snap => {
+    const groups = snap.val() ? Object.values(snap.val()) : [];
+    const list = document.getElementById('groupList');
+    const none = document.getElementById('noGroups');
+    if (!groups.length) { list.innerHTML=''; none.classList.remove('hidden'); return; }
+    none.classList.add('hidden');
+    list.innerHTML = groups.map((g,i) =>
+      `<div class="group-select-item slide-in" style="animation-delay:${i*0.08}s" onclick="selectGroup('${g.id}','${g.name}')">
+        <div class="group-sel-icon">${g.name.charAt(0)}</div>
+        <div style="flex:1"><div style="font-weight:700">${g.name}</div><div style="font-size:0.75rem;color:var(--slate)">Tap to log your entry</div></div>
+        <div style="font-size:1.2rem;color:#94a3b8">›</div>
+      </div>`).join('');
+  });
+}
+
+function selectGroup(id, name) {
+  db.ref('groups').once('value').then(snap => {
+    const groups = snap.val();
+    const group = groups ? Object.values(groups).find(g => g.id === id) : null;
+    if (!group) return;
+    activeGroup = group;
+    document.getElementById('pinGroupName').textContent = name;
+    document.getElementById('pinInput').value = '';
+    show('screen-pin');
+  });
+}
+
+function verifyPin() {
+  const entered = document.getElementById('pinInput').value;
+  const correct = activeGroup.pin || '1234';
+  if (entered === correct) {
+    renderWorkerList();
+    show('screen-workers');
+    document.getElementById('lockedGroupBadge').textContent = activeGroup.name;
+  } else {
+    document.getElementById('pinInput').value = '';
+    alert('Incorrect PIN. Try again.');
+  }
+}
+
+function renderWorkerList() {
+  db.ref('workers').once('value').then(snap => {
+    const workers = snap.val() ? Object.values(snap.val()).filter(w => w.groupId === activeGroup.id) : [];
+    const list = document.getElementById('workerList');
+    const none = document.getElementById('noWorkers');
+    if (!workers.length) { list.innerHTML=''; none.classList.remove('hidden'); return; }
+    none.classList.add('hidden');
+    list.innerHTML = workers.map((w,i) =>
+      `<div class="worker-item slide-in" style="animation-delay:${i*0.08}s" onclick="pickWorker('${w.id}','${w.name}','${w.initials}')">
+        <div class="avatar">${w.initials}</div>
+        <div style="flex:1"><div class="worker-name">${w.name}</div><div class="worker-sub">Tap to start logging</div></div>
+        <div class="w-arrow">›</div>
+      </div>`).join('');
+  });
+}
+
+function pickWorker(id, name, initials) {
+  activeWorker = { id, name, initials };
+  show('screen-farm');
+}
+
+function pickFarm(farm) {
+  activeFarm = farm;
+  document.querySelectorAll('.farm-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById('fc-' + farm).classList.add('sel');
+  setTimeout(() => {
+    document.getElementById('workerBanner').textContent =
+      '👤 ' + activeWorker.name + ' · ' + (farm === 'chicken' ? '🐔 Chicken' : '🐇 Rabbit') + ' · ' + activeGroup.name;
+    document.getElementById('form-chicken').classList.toggle('hidden', farm !== 'chicken');
+    document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
+    show('screen-log');
+  }, 200);
 }
 
 function pickRabbitFeed(type) {
@@ -358,6 +555,7 @@ function pickRabbitFeed(type) {
   document.getElementById('chip-' + type.toLowerCase()).classList.add('active');
 }
 
+// ---- LITTER & DEATH ENTRIES ----
 function addLitterEntry() {
   const container = document.getElementById('litterEntries');
   const div = document.createElement('div');
@@ -402,110 +600,122 @@ function adj(id, delta) {
   hidden.value = current;
 }
 
-function renderGroupList() { /* same as before */ }
-function selectGroup(id, name) { /* same */ }
-function verifyPin() { /* same */ }
-function renderWorkerList() { /* same */ }
-function pickWorker(id, name, initials) { /* same */ }
-function pickFarm(farm) { /* same */ }
-
-// Submit function – now collects all treatments
+// ---- SUBMIT LOG ----
 function submitLog(farm) {
   if (farm === 'chicken') {
-    // chicken validation and submit (unchanged)
-  } else {
-    // Validation for required fields
-    if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
-    if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
-    if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
-    if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
+    if (!document.getElementById('c_birds').value) { alert('Enter number of birds'); return; }
+    // Chicken data collection
+    const log = {
+      id: 'L' + Date.now(),
+      date: new Date().toISOString(),
+      farm: 'chicken',
+      groupId: activeGroup.id,
+      groupName: activeGroup.name,
+      workerId: activeWorker.id,
+      workerName: activeWorker.name,
+      birds: parseInt(document.getElementById('c_birds').value) || 0,
+      eggsGood: parseInt(document.getElementById('c_good_d').value) || 0,
+      eggsCracked: parseInt(document.getElementById('c_cracked_d').value) || 0,
+      eggsShelless: parseInt(document.getElementById('c_shelless_d').value) || 0,
+      eggsBroken: parseInt(document.getElementById('c_broken_d').value) || 0,
+      cratesSold: parseFloat(document.getElementById('c_crates').value) || 0,
+      cratesRevenue: parseFloat(document.getElementById('c_revenue').value) || 0,
+      deaths: parseInt(document.getElementById('c_deaths_d').value) || 0,
+      cause: document.getElementById('c_cause').value
+    };
+    submitToFirebase(log);
+    return;
   }
 
-  document.getElementById('loadingOverlay').classList.remove('hidden');
+  // ---- RABBIT VALIDATION ----
+  if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
+  if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
+  if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
+  if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
+
+  // Save current treatment data before submitting
+  saveFeedTreatmentData();
+  saveWeightTreatmentData();
+
+  // ---- COLLECT RABBIT DATA ----
+  const treatmentData = [];
+  treatments.forEach(t => {
+    const fw = feedWaterData[t.id] || { water: '', rabbits: {} };
+    const w = weightData[t.id] || { rabbits: {} };
+    
+    const feedEntries = t.rabbits.map(r => ({
+      rabbit: r,
+      feedGrams: parseFloat(fw.rabbits[r]) || 0
+    })).filter(e => e.feedGrams > 0);
+    
+    const weightEntries = t.rabbits.map(r => ({
+      rabbit: r,
+      weightKg: parseFloat(w.rabbits[r]) || 0
+    })).filter(e => e.weightKg > 0);
+    
+    treatmentData.push({
+      treatment: t.id,
+      waterLitres: parseFloat(fw.water) || 0,
+      feedEntries,
+      weightEntries
+    });
+  });
+
+  // Litter entries
+  const litterEntries = [];
+  document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
+    const rabbit = row.querySelector('.rabbit-select').value;
+    const litters = parseFloat(row.querySelector('.litter-count').value) || 0;
+    const kits = parseFloat(row.querySelector('.kit-count').value) || 0;
+    if (litters > 0 || kits > 0) litterEntries.push({ rabbit, litters, kits });
+  });
+
+  // Death entries
+  const deathEntries = [];
+  document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
+    const category = row.querySelector('.death-category').value;
+    const rabbit = row.querySelector('.rabbit-select').value;
+    const count = parseFloat(row.querySelector('.death-count').value) || 0;
+    if (count > 0) deathEntries.push({ category, rabbit, count });
+  });
 
   const log = {
     id: 'L' + Date.now(),
     date: new Date().toISOString(),
-    farm,
+    farm: 'rabbit',
     groupId: activeGroup.id,
     groupName: activeGroup.name,
     workerId: activeWorker.id,
-    workerName: activeWorker.name
+    workerName: activeWorker.name,
+    rMale: parseInt(document.getElementById('r_male').value) || 0,
+    rFemale: parseInt(document.getElementById('r_female').value) || 0,
+    rWeaners: parseInt(document.getElementById('r_weaners').value) || 0,
+    rKits: parseInt(document.getElementById('r_kits').value) || 0,
+    feedType: document.getElementById('r_feedtype').value,
+    treatmentData: treatmentData,
+    weekNum: parseInt(document.getElementById('r_weeknum').value) || null,
+    matingDate: document.getElementById('r_mating').value || null,
+    rabbitsMated: parseInt(document.getElementById('r_mated_count').value) || 0,
+    edd: document.getElementById('r_edd').value || null,
+    deliveryDate: document.getElementById('r_delivery_date').value || null,
+    litterEntries: litterEntries,
+    litters: litterEntries.reduce((s,e) => s+e.litters, 0),
+    newKits: litterEntries.reduce((s,e) => s+e.kits, 0),
+    rabbitsSold: parseInt(document.getElementById('r_sold_d').value) || 0,
+    boughtAdultMale: parseInt(document.getElementById('r_bought_adult_male_d').value) || 0,
+    boughtAdultFemale: parseInt(document.getElementById('r_bought_adult_female_d').value) || 0,
+    boughtWeaners: parseInt(document.getElementById('r_bought_weaners_d').value) || 0,
+    boughtKits: parseInt(document.getElementById('r_bought_kits_d').value) || 0,
+    deathEntries: deathEntries,
+    deaths: deathEntries.reduce((s,e) => s+e.count, 0),
+    cause: document.getElementById('r_cause') ? document.getElementById('r_cause').value : ''
   };
 
-  if (farm === 'chicken') {
-    // chicken data collection (unchanged)
-  } else {
-    log.rMale = parseInt(document.getElementById('r_male').value) || 0;
-    log.rFemale = parseInt(document.getElementById('r_female').value) || 0;
-    log.rWeaners = parseInt(document.getElementById('r_weaners').value) || 0;
-    log.rKits = parseInt(document.getElementById('r_kits').value) || 0;
+  submitToFirebase(log);
+}
 
-    // Collect per-treatment data
-    const treatmentData = [];
-    treatments.forEach(t => {
-      const water = parseFloat(document.getElementById(`water_${t.id}`).value) || 0;
-      const feedEntries = [];
-      t.rabbits.forEach(r => {
-        const feedInput = document.getElementById(`feed_${t.id}_${r}`);
-        if (feedInput && feedInput.value !== '') {
-          feedEntries.push({ rabbit: r, feedGrams: parseFloat(feedInput.value) || 0 });
-        }
-      });
-      const weightEntries = [];
-      t.rabbits.forEach(r => {
-        const weightInput = document.getElementById(`weight_${t.id}_${r}`);
-        if (weightInput && weightInput.value !== '') {
-          weightEntries.push({ rabbit: r, weightKg: parseFloat(weightInput.value) || 0 });
-        }
-      });
-      treatmentData.push({
-        treatment: t.id,
-        waterLitres: water,
-        feedEntries,
-        weightEntries
-      });
-    });
-
-    log.feedType = document.getElementById('r_feedtype').value;
-    log.treatmentData = treatmentData; // this stores all treatments
-
-    // Other fields (mating, litter, sales, bought, deaths) – unchanged
-    log.weekNum = parseInt(document.getElementById('r_weeknum').value) || null;
-    log.matingDate = document.getElementById('r_mating').value || null;
-    log.rabbitsMated = parseInt(document.getElementById('r_mated_count').value) || 0;
-    log.edd = document.getElementById('r_edd').value || null;
-    log.deliveryDate = document.getElementById('r_delivery_date').value || null;
-
-    const litterEntries = [];
-    document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
-      const rabbit = row.querySelector('.rabbit-select').value;
-      const litters = parseFloat(row.querySelector('.litter-count').value) || 0;
-      const kits = parseFloat(row.querySelector('.kit-count').value) || 0;
-      if (litters > 0 || kits > 0) litterEntries.push({ rabbit, litters, kits });
-    });
-    log.litterEntries = litterEntries;
-    log.litters = litterEntries.reduce((s,e) => s+e.litters, 0);
-    log.newKits = litterEntries.reduce((s,e) => s+e.kits, 0);
-
-    log.rabbitsSold = parseInt(document.getElementById('r_sold_d').value) || 0;
-    log.boughtAdultMale = parseInt(document.getElementById('r_bought_adult_male_d').value) || 0;
-    log.boughtAdultFemale = parseInt(document.getElementById('r_bought_adult_female_d').value) || 0;
-    log.boughtWeaners = parseInt(document.getElementById('r_bought_weaners_d').value) || 0;
-    log.boughtKits = parseInt(document.getElementById('r_bought_kits_d').value) || 0;
-
-    const deathEntries = [];
-    document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
-      const category = row.querySelector('.death-category').value;
-      const rabbit = row.querySelector('.rabbit-select').value;
-      const count = parseFloat(row.querySelector('.death-count').value) || 0;
-      if (count > 0) deathEntries.push({ category, rabbit, count });
-    });
-    log.deathEntries = deathEntries;
-    log.deaths = deathEntries.reduce((s,e) => s+e.count, 0);
-    log.cause = document.getElementById('r_cause') ? document.getElementById('r_cause').value : '';
-  }
-
+function submitToFirebase(log) {
+  document.getElementById('loadingOverlay').classList.remove('hidden');
   db.ref('logs').push(log).then(() => {
     lastReceipt = log;
     showReceipt(log);
@@ -514,8 +724,8 @@ function submitLog(farm) {
   });
 }
 
+// ---- RECEIPT ----
 function showReceipt(log) {
-  // Updated to show treatmentData
   const dt = new Date(log.date);
   const dateStr = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -528,7 +738,7 @@ function showReceipt(log) {
   body += rg('📅 Info', rr('Date',dateStr)+rr('Time',timeStr)+rr('Group',log.groupName)+rr('Worker',log.workerName)+rr('Farm',isC?'Chicken Farm':'Rabbit Farm')+rr('Entry ID',log.id));
 
   if (isC) {
-    // chicken receipt (unchanged)
+    body += rg('🐔 Production', rr('Birds Met',log.birds)+rr('Good Eggs',log.eggsGood,'highlight')+rr('Cracked',log.eggsCracked)+rr('Shelless',log.eggsShelless)+rr('Broken',log.eggsBroken)+rr('Crates',log.cratesSold)+rr('Revenue','₦'+Number(log.cratesRevenue).toLocaleString(),'highlight')+rr('Deaths',log.deaths,log.deaths>0?'danger':'')+(log.cause?rr('Cause',log.cause):''));
   } else {
     body += rg('🐇 Animals Met', rr('Males',log.rMale)+rr('Females',log.rFemale)+rr('Weaners',log.rWeaners)+rr('Kits',log.rKits));
 
@@ -546,7 +756,6 @@ function showReceipt(log) {
       });
     }
 
-    // Litters, sales, bought, deaths (same as before)
     if (log.litterEntries && log.litterEntries.length > 0) {
       let lStr = log.litterEntries.map(e => `R${e.rabbit}: ${e.litters} litters, ${e.kits} kits`).join('<br>');
       body += rg('🐣 Litters & Kits', `<div class="receipt-row"><span>${lStr}</span></div>`);
@@ -566,125 +775,52 @@ function showReceipt(log) {
   show('screen-receipt');
 }
 
-function notifySupervisor() { /* same */ }
-function show(id) { /* same */ }
-function backToGroups() { /* same */ }
-function backToWorkers() { /* same */ }
-function backToFarm() { /* same */ }
-
-function startOver() {
-  // Clear all fields – including all treatment inputs
-  const ids = ['c_birds','c_crates','c_revenue','c_cause','r_male','r_female','r_weaners','r_kits','r_weeknum','r_mating','r_mated_count','r_edd','r_delivery_date','r_cause'];
-  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  ['c_good','c_cracked','c_shelless','c_broken','c_deaths','r_sold','r_bought_adult_male','r_bought_adult_female','r_bought_weaners','r_bought_kits'].forEach(id => {
-    const hidden = document.getElementById(id); if (hidden) hidden.value = 0;
-    const display = document.getElementById(id + '_d'); if (display) display.value = 0;
-  });
-  // Clear all treatment inputs
-  treatments.forEach(t => {
-    document.getElementById(`water_${t.id}`).value = '';
-    t.rabbits.forEach(r => {
-      const feed = document.getElementById(`feed_${t.id}_${r}`);
-      if (feed) feed.value = '';
-      const weight = document.getElementById(`weight_${t.id}_${r}`);
-      if (weight) weight.value = '';
-    });
-  });
-  document.getElementById('litterEntries').innerHTML = '';
-  document.getElementById('deathEntries').innerHTML = '';
-  addLitterEntry();
-  addDeathEntry();
-  document.getElementById('r_feedtype').value = 'Growers';
-  document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));
-  document.getElementById('chip-growers').classList.add('active');
-  activeFarm = null;
-  show('screen-farm');
-}
-
-// Re-include the common functions (they are the same as before)
-// I'll keep them short for brevity; they are unchanged from previous version.
-// For full working code, the above functions are included in the actual file.
-// I'll paste the missing functions here to make the code complete.
-
-function renderGroupList() {
-  db.ref('groups').once('value').then(snap => {
-    const groups = snap.val() ? Object.values(snap.val()) : [];
-    const list = document.getElementById('groupList');
-    const none = document.getElementById('noGroups');
-    if (!groups.length) { list.innerHTML=''; none.classList.remove('hidden'); return; }
-    none.classList.add('hidden');
-    list.innerHTML = groups.map((g,i) =>
-      `<div class="group-select-item slide-in" style="animation-delay:${i*0.08}s" onclick="selectGroup('${g.id}','${g.name}')">
-        <div class="group-sel-icon">${g.name.charAt(0)}</div>
-        <div style="flex:1"><div style="font-weight:700">${g.name}</div><div style="font-size:0.75rem;color:var(--slate)">Tap to log your entry</div></div>
-        <div style="font-size:1.2rem;color:#94a3b8">›</div>
-      </div>`).join('');
-  });
-}
-function selectGroup(id, name) {
-  db.ref('groups').once('value').then(snap => {
-    const groups = snap.val();
-    const group = groups ? Object.values(groups).find(g => g.id === id) : null;
-    if (!group) return;
-    activeGroup = group;
-    document.getElementById('pinGroupName').textContent = name;
-    document.getElementById('pinInput').value = '';
-    show('screen-pin');
-  });
-}
-function verifyPin() {
-  const entered = document.getElementById('pinInput').value;
-  const correct = activeGroup.pin || '1234';
-  if (entered === correct) {
-    renderWorkerList();
-    show('screen-workers');
-    document.getElementById('lockedGroupBadge').textContent = activeGroup.name;
-  } else {
-    document.getElementById('pinInput').value = '';
-    alert('Incorrect PIN. Try again.');
-  }
-}
-function renderWorkerList() {
-  db.ref('workers').once('value').then(snap => {
-    const workers = snap.val() ? Object.values(snap.val()).filter(w => w.groupId === activeGroup.id) : [];
-    const list = document.getElementById('workerList');
-    const none = document.getElementById('noWorkers');
-    if (!workers.length) { list.innerHTML=''; none.classList.remove('hidden'); return; }
-    none.classList.add('hidden');
-    list.innerHTML = workers.map((w,i) =>
-      `<div class="worker-item slide-in" style="animation-delay:${i*0.08}s" onclick="pickWorker('${w.id}','${w.name}','${w.initials}')">
-        <div class="avatar">${w.initials}</div>
-        <div style="flex:1"><div class="worker-name">${w.name}</div><div class="worker-sub">Tap to start logging</div></div>
-        <div class="w-arrow">›</div>
-      </div>`).join('');
-  });
-}
-function pickWorker(id, name, initials) {
-  activeWorker = { id, name, initials };
-  show('screen-farm');
-}
-function pickFarm(farm) {
-  activeFarm = farm;
-  document.querySelectorAll('.farm-card').forEach(c => c.classList.remove('sel'));
-  document.getElementById('fc-' + farm).classList.add('sel');
-  setTimeout(() => {
-    document.getElementById('workerBanner').textContent =
-      '👤 ' + activeWorker.name + ' · ' + (farm === 'chicken' ? '🐔 Chicken' : '🐇 Rabbit') + ' · ' + activeGroup.name;
-    document.getElementById('form-chicken').classList.toggle('hidden', farm !== 'chicken');
-    document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
-    show('screen-log');
-  }, 200);
-}
 function notifySupervisor() {
   const message = encodeURIComponent("Good day sir, these are the activities that occurred on the farm today. Please check the dashboard.");
   window.open('https://wa.me/2348132146857?text=' + message, '_blank');
 }
+
 function show(id) {
   ['screen-group','screen-pin','screen-workers','screen-farm','screen-log','screen-receipt'].forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
 }
+
 function backToGroups() { activeGroup=null; activeWorker=null; activeFarm=null; renderGroupList(); show('screen-group'); }
 function backToWorkers() { activeWorker=null; activeFarm=null; show('screen-workers'); }
 function backToFarm() { activeFarm=null; show('screen-farm'); }
+
+function startOver() {
+  // Reset form fields
+  ['c_birds','c_crates','c_revenue','c_cause','r_male','r_female','r_weaners','r_kits','r_weeknum','r_mating','r_mated_count','r_edd','r_delivery_date','r_cause'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['c_good','c_cracked','c_shelless','c_broken','c_deaths','r_sold','r_bought_adult_male','r_bought_adult_female','r_bought_weaners','r_bought_kits'].forEach(id => {
+    const hidden = document.getElementById(id); if (hidden) hidden.value = 0;
+    const display = document.getElementById(id + '_d'); if (display) display.value = 0;
+  });
+
+  // Reset treatment data state
+  feedWaterData = {};
+  weightData = {};
+  selectedFeedTreatment = 'control';
+  selectedWeightTreatment = 'control';
+
+  // Clear litter and death entries
+  document.getElementById('litterEntries').innerHTML = '';
+  document.getElementById('deathEntries').innerHTML = '';
+  addLitterEntry();
+  addDeathEntry();
+
+  // Reset feed type
+  document.getElementById('r_feedtype').value = 'Growers';
+  document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('chip-growers').classList.add('active');
+
+  // Re-render treatment chips and default views
+  initTreatmentChips();
+
+  activeFarm = null;
+  show('screen-farm');
+}
 
 init();
 </script>
