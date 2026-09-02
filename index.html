@@ -207,7 +207,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div><!-- end .app -->
 
 <script>
-// Firebase config – same as owner dashboard
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
   authDomain: "farm-appp-4f7f6.firebaseapp.com",
@@ -251,31 +251,26 @@ let selectedWeightTreatment = 'control';
 // ---- INIT ----
 function init() {
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  // Listen for group changes
   db.ref('groups').on('value', snap => {
-    console.log('Groups data changed, refreshing list');
+    console.log('Groups changed, refreshing list');
     renderGroupList();
   });
   db.ref('workers').on('value', snap => {
     if (activeGroup && !document.getElementById('screen-workers').classList.contains('hidden')) renderWorkerList();
   });
-  // Initial render
-  renderGroupList();
-  // Also check connection status
   db.ref('.info/connected').on('value', snap => {
     const connected = snap.val();
     document.getElementById('syncDot').className = 'sync-dot' + (connected ? '' : ' offline');
     document.getElementById('syncStatus').textContent = connected ? 'Online' : 'Offline';
   });
-  // Pre-populate dynamic entries
+  renderGroupList();
   addLitterEntry();
   addDeathEntry();
 }
 
-// ---- REFRESH GROUPS (manual) ----
 function refreshGroups() {
   document.getElementById('syncStatus').textContent = 'Refreshing…';
-  db.ref('groups').once('value').then(snap => {
+  db.ref('groups').once('value').then(() => {
     renderGroupList();
     document.getElementById('syncStatus').textContent = 'Online';
   }).catch(err => {
@@ -288,7 +283,7 @@ function refreshGroups() {
 function renderGroupList() {
   db.ref('groups').once('value').then(snap => {
     const groupsData = snap.val();
-    console.log('Groups data from Firebase:', groupsData);
+    console.log('Groups data:', groupsData);
     const groups = groupsData ? Object.values(groupsData) : [];
     const list = document.getElementById('groupList');
     const none = document.getElementById('noGroups');
@@ -317,7 +312,6 @@ function selectGroup(id, name) {
     const group = snap.val();
     if (!group) { alert('Group not found'); return; }
     activeGroup = group;
-    // Load settings
     db.ref('groups/' + id + '/settings').once('value').then(settingsSnap => {
       groupSettings = settingsSnap.val() || {};
       if (!groupSettings.chickenEnabled) groupSettings.chickenEnabled = false;
@@ -368,7 +362,6 @@ function renderWorkerList() {
 // ---- PICK WORKER ----
 function pickWorker(id, name, initials) {
   activeWorker = { id, name, initials };
-  // Show/hide farm options based on settings
   document.getElementById('fc-chicken').classList.toggle('hidden', !groupSettings.chickenEnabled);
   document.getElementById('fc-rabbit').classList.toggle('hidden', !groupSettings.rabbitEnabled);
   show('screen-farm');
@@ -390,7 +383,7 @@ function pickFarm(farm) {
   }, 200);
 }
 
-// ---- BUILD RABBIT FORM (dynamic based on settings) ----
+// ---- BUILD RABBIT FORM ----
 function buildRabbitForm() {
   const container = document.getElementById('rabbitDynamicContent');
   const sections = groupSettings.rabbitSections || {};
@@ -510,7 +503,6 @@ function buildRabbitForm() {
 
   container.innerHTML = html;
 
-  // Initialize treatment chips if needed
   if (sections.feed === true) {
     initFeedTreatmentChips();
     if (!feedWaterData['control']) feedWaterData['control'] = { water: '', rabbits: {} };
@@ -521,7 +513,6 @@ function buildRabbitForm() {
     if (!weightData['control']) weightData['control'] = { rabbits: {} };
     selectWeightTreatment('control');
   }
-  // Ensure litter and death adders work – they are already in the DOM.
 }
 
 // ---- FEED & WATER TREATMENT CHIPS ----
@@ -545,7 +536,6 @@ function initWeightTreatmentChips() {
   container.innerHTML = html;
 }
 
-// ---- SAVE & SELECT FEED ----
 function saveFeedTreatmentData() {
   const container = document.getElementById('feedRabbitInputs');
   const waterInput = document.getElementById('r_group_water');
@@ -583,7 +573,6 @@ function selectFeedTreatment(treatmentId) {
   if (activeChip) activeChip.classList.add('active');
 }
 
-// ---- SAVE & SELECT WEIGHT ----
 function saveWeightTreatmentData() {
   const container = document.getElementById('weightRabbitInputs');
   if (!container) return;
@@ -617,7 +606,6 @@ function selectWeightTreatment(treatmentId) {
   if (activeChip) activeChip.classList.add('active');
 }
 
-// ---- PICK RABBIT FEED ----
 function pickRabbitFeed(type) {
   document.getElementById('r_feedtype').value = type;
   document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));
@@ -625,7 +613,6 @@ function pickRabbitFeed(type) {
   if (chip) chip.classList.add('active');
 }
 
-// ---- LITTER & DEATH ----
 function addLitterEntry() {
   const container = document.getElementById('litterEntries');
   if (!container) return;
@@ -658,7 +645,6 @@ function addDeathEntry() {
   container.appendChild(div);
 }
 
-// ---- ADJUST STEPPER ----
 function adj(id, delta) {
   const hidden = document.getElementById(id);
   const display = document.getElementById(id + '_d');
@@ -669,16 +655,43 @@ function adj(id, delta) {
   hidden.value = current;
 }
 
-// ---- SUBMIT LOG (rabbit) ----
+// ---- SUBMIT LOG ----
 function submitLog(farm) {
   if (farm === 'chicken') {
-    // Chicken submission code (omitted for brevity, same as before)
-    // ...
-    alert('Chicken submission not fully implemented in this demo');
+    // ---- CHICKEN SUBMISSION ----
+    if (!document.getElementById('c_birds').value) {
+      alert('Enter number of birds');
+      return;
+    }
+    const log = {
+      id: 'L' + Date.now(),
+      date: new Date().toISOString(),
+      farm: 'chicken',
+      groupId: activeGroup.id,
+      groupName: activeGroup.name,
+      workerId: activeWorker.id,
+      workerName: activeWorker.name,
+      birds: parseInt(document.getElementById('c_birds').value) || 0,
+      eggsGood: parseInt(document.getElementById('c_good_d').value) || 0,
+      eggsCracked: parseInt(document.getElementById('c_cracked_d').value) || 0,
+      eggsShelless: parseInt(document.getElementById('c_shelless_d').value) || 0,
+      eggsBroken: parseInt(document.getElementById('c_broken_d').value) || 0,
+      cratesSold: parseFloat(document.getElementById('c_crates').value) || 0,
+      cratesRevenue: parseFloat(document.getElementById('c_revenue').value) || 0,
+      deaths: parseInt(document.getElementById('c_deaths_d').value) || 0,
+      cause: document.getElementById('c_cause').value || ''
+    };
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    db.ref('logs').push(log).then(() => {
+      lastReceipt = log;
+      showReceipt(log);
+    }).finally(() => {
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    });
     return;
   }
 
-  // Rabbit validation
+  // ---- RABBIT SUBMISSION ----
   if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
   if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
   if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
@@ -766,12 +779,81 @@ function submitLog(farm) {
   });
 }
 
-// ---- SHOW RECEIPT (simplified) ----
+// ---- SHOW RECEIPT ----
 function showReceipt(log) {
-  // Basic receipt – full version can be copied from earlier.
-  alert('Log submitted! Check Firebase.');
-  // In a real app, you'd render the receipt.
-  startOver();
+  const dt = new Date(log.date);
+  const dateStr = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const isC = log.farm === 'chicken';
+  let body = '';
+
+  const rr = (label, val, cls) => `<div class="receipt-row"><span class="receipt-label">${label}</span><span class="receipt-val ${cls || ''}">${val}</span></div>`;
+  const rg = (title, rows) => `<div class="receipt-group"><div class="receipt-group-title">${title}</div>${rows}</div>`;
+
+  body += rg('📅 Info', rr('Date', dateStr) + rr('Time', timeStr) + rr('Group', log.groupName) + rr('Worker', log.workerName) + rr('Farm', isC ? 'Chicken' : 'Rabbit') + rr('Entry ID', log.id));
+
+  if (isC) {
+    body += rg('🐔 Production', 
+      rr('Birds', log.birds) + 
+      rr('Good Eggs', log.eggsGood, 'highlight') + 
+      rr('Cracked', log.eggsCracked) + 
+      rr('Shelless', log.eggsShelless) + 
+      rr('Broken', log.eggsBroken) + 
+      rr('Crates', log.cratesSold) + 
+      rr('Revenue', '₦' + Number(log.cratesRevenue).toLocaleString(), 'highlight') + 
+      rr('Deaths', log.deaths, log.deaths > 0 ? 'danger' : '') + 
+      (log.cause ? rr('Cause', log.cause) : '')
+    );
+  } else {
+    body += rg('🐇 Animals', 
+      rr('Males', log.rMale) + 
+      rr('Females', log.rFemale) + 
+      rr('Weaners', log.rWeaners) + 
+      rr('Kits', log.rKits)
+    );
+
+    if (log.treatmentData && log.treatmentData.length > 0) {
+      log.treatmentData.forEach(td => {
+        const treatLabel = treatments.find(t => t.id === td.treatment)?.label || td.treatment;
+        let rows = rr('💧 Water', td.waterLitres || 0, 'highlight');
+        if (td.feedEntries && td.feedEntries.length > 0) {
+          rows += `<div class="receipt-row"><span>🌾 ${td.feedEntries.map(e => `R${e.rabbit}: ${e.feedGrams}g`).join(', ')}</span></div>`;
+        }
+        if (td.weightEntries && td.weightEntries.length > 0) {
+          rows += `<div class="receipt-row"><span>⚖️ ${td.weightEntries.map(e => `R${e.rabbit}: ${e.weightKg}kg`).join(', ')}</span></div>`;
+        }
+        body += rg(`📌 ${treatLabel}`, rows);
+      });
+    }
+
+    if (log.litterEntries && log.litterEntries.length > 0) {
+      body += rg('🐣 Litters', `<div class="receipt-row"><span>${log.litterEntries.map(e => `R${e.rabbit}: ${e.litters} litters, ${e.kits} kits`).join('; ')}</span></div>`);
+    }
+    body += rg('💰 Sales', rr('Sold', log.rabbitsSold || 0));
+    body += rg('🛒 Bought', 
+      rr('Adult M', log.boughtAdultMale || 0) + 
+      rr('Adult F', log.boughtAdultFemale || 0) + 
+      rr('Weaners', log.boughtWeaners || 0) + 
+      rr('Kits', log.boughtKits || 0)
+    );
+    if (log.deathEntries && log.deathEntries.length > 0) {
+      body += rg('💀 Deaths', `<div class="receipt-row"><span>${log.deathEntries.map(e => `${e.category} R${e.rabbit}: ${e.count}`).join('; ')}</span></div>`);
+    }
+    if (log.matingDate) {
+      body += rg('❤️ Mating', 
+        rr('Date', log.matingDate) + 
+        rr('Mated', log.rabbitsMated || 0) + 
+        rr('EDD', log.edd || '—') + 
+        rr('Delivery', log.deliveryDate || '—')
+      );
+    }
+  }
+
+  document.getElementById('receiptCard').innerHTML =
+    `<div class="receipt-header"><div class="receipt-header-icon">${isC ? '🐔' : '🐇'}</div><h2>Log Submitted</h2><div class="receipt-header-sub">${log.groupName} · ${log.workerName}</div></div>
+    <div class="receipt-body">${body}</div>
+    <div class="receipt-footer"><div class="receipt-stamp">✅ Saved to Database</div></div>`;
+  show('screen-receipt');
 }
 
 // ---- NAVIGATION ----
@@ -788,12 +870,13 @@ function backToWorkers() { activeWorker = null; activeFarm = null; show('screen-
 function backToFarm() { activeFarm = null; show('screen-farm'); }
 
 function startOver() {
-  // Reset fields (simplified)
-  show('screen-farm');
+  // Reset all form fields and go back to farm selection
   activeFarm = null;
+  show('screen-farm');
+  // Optionally clear data – but we keep it simple.
 }
 
-// ---- INIT ----
+// ---- START ----
 init();
 </script>
 </body>
