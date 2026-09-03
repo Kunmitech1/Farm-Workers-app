@@ -692,50 +692,68 @@ function submitLog(farm) {
   }
 
   // ---- RABBIT SUBMISSION ----
-  if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
-  if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
-  if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
-  if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
+  // Check if animals section is enabled (should be, but just in case)
+  if (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) {
+    if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
+    if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
+    if (!document.getElementById('r_weaners').value) { alert('Enter number of weaners'); return; }
+    if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
+  }
 
-  saveFeedTreatmentData();
-  saveWeightTreatmentData();
+  // Only save feed/weight data if those sections exist and are rendered
+  if (groupSettings.rabbitSections && groupSettings.rabbitSections.feed === true) {
+    saveFeedTreatmentData();
+  }
+  if (groupSettings.rabbitSections && groupSettings.rabbitSections.weight === true) {
+    saveWeightTreatmentData();
+  }
 
-  const treatmentData = [];
-  treatments.forEach(t => {
-    const fw = feedWaterData[t.id] || { water: '', rabbits: {} };
-    const w = weightData[t.id] || { rabbits: {} };
-    const feedEntries = t.rabbits.map(r => ({
-      rabbit: r,
-      feedGrams: parseFloat(fw.rabbits[r]) || 0
-    })).filter(e => e.feedGrams > 0);
-    const weightEntries = t.rabbits.map(r => ({
-      rabbit: r,
-      weightKg: parseFloat(w.rabbits[r]) || 0
-    })).filter(e => e.weightKg > 0);
-    treatmentData.push({
-      treatment: t.id,
-      waterLitres: parseFloat(fw.water) || 0,
-      feedEntries,
-      weightEntries
+  // Build treatment data only if feed or weight sections are enabled
+  let treatmentData = [];
+  if (groupSettings.rabbitSections && (groupSettings.rabbitSections.feed === true || groupSettings.rabbitSections.weight === true)) {
+    treatments.forEach(t => {
+      const fw = feedWaterData[t.id] || { water: '', rabbits: {} };
+      const w = weightData[t.id] || { rabbits: {} };
+      const feedEntries = t.rabbits.map(r => ({
+        rabbit: r,
+        feedGrams: parseFloat(fw.rabbits[r]) || 0
+      })).filter(e => e.feedGrams > 0);
+      const weightEntries = t.rabbits.map(r => ({
+        rabbit: r,
+        weightKg: parseFloat(w.rabbits[r]) || 0
+      })).filter(e => e.weightKg > 0);
+      treatmentData.push({
+        treatment: t.id,
+        waterLitres: parseFloat(fw.water) || 0,
+        feedEntries,
+        weightEntries
+      });
     });
-  });
+  }
 
-  const litterEntries = [];
-  document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
-    const rabbit = row.querySelector('.rabbit-select').value;
-    const litters = parseFloat(row.querySelector('.litter-count').value) || 0;
-    const kits = parseFloat(row.querySelector('.kit-count').value) || 0;
-    if (litters > 0 || kits > 0) litterEntries.push({ rabbit, litters, kits });
-  });
+  // Collect litter entries only if section enabled
+  let litterEntries = [];
+  if (groupSettings.rabbitSections && groupSettings.rabbitSections.litters === true) {
+    document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
+      const rabbit = row.querySelector('.rabbit-select').value;
+      const litters = parseFloat(row.querySelector('.litter-count').value) || 0;
+      const kits = parseFloat(row.querySelector('.kit-count').value) || 0;
+      if (litters > 0 || kits > 0) litterEntries.push({ rabbit, litters, kits });
+    });
+  }
 
-  const deathEntries = [];
-  document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
-    const category = row.querySelector('.death-category').value;
-    const rabbit = row.querySelector('.rabbit-select').value;
-    const count = parseFloat(row.querySelector('.death-count').value) || 0;
-    if (count > 0) deathEntries.push({ category, rabbit, count });
-  });
+  // Collect death entries only if section enabled
+  let deathEntries = [];
+  if (groupSettings.rabbitSections && groupSettings.rabbitSections.mortality !== false) {
+    document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
+      const category = row.querySelector('.death-category').value;
+      const rabbit = row.querySelector('.rabbit-select').value;
+      const count = parseFloat(row.querySelector('.death-count').value) || 0;
+      if (count > 0) deathEntries.push({ category, rabbit, count });
+    });
+  }
 
+  // Build the log object – only include fields that are present
   const log = {
     id: 'L' + Date.now(),
     date: new Date().toISOString(),
@@ -744,30 +762,38 @@ function submitLog(farm) {
     groupName: activeGroup.name,
     workerId: activeWorker.id,
     workerName: activeWorker.name,
-    rMale: parseInt(document.getElementById('r_male').value) || 0,
-    rFemale: parseInt(document.getElementById('r_female').value) || 0,
-    rWeaners: parseInt(document.getElementById('r_weaners').value) || 0,
-    rKits: parseInt(document.getElementById('r_kits').value) || 0,
-    feedType: document.getElementById('r_feedtype').value,
-    feedTreatment: selectedFeedTreatment,
-    weightTreatment: selectedWeightTreatment,
+    // Animals
+    rMale: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_male').value) || 0 : 0,
+    rFemale: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_female').value) || 0 : 0,
+    rWeaners: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_weaners').value) || 0 : 0,
+    rKits: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_kits').value) || 0 : 0,
+    // Feed & Weight
+    feedType: (groupSettings.rabbitSections && groupSettings.rabbitSections.feed === true) ? document.getElementById('r_feedtype').value : '',
+    feedTreatment: (groupSettings.rabbitSections && groupSettings.rabbitSections.feed === true) ? selectedFeedTreatment : '',
+    weightTreatment: (groupSettings.rabbitSections && groupSettings.rabbitSections.weight === true) ? selectedWeightTreatment : '',
     treatmentData: treatmentData,
-    weekNum: parseInt(document.getElementById('r_weeknum').value) || null,
-    matingDate: document.getElementById('r_mating').value || null,
-    rabbitsMated: parseInt(document.getElementById('r_mated_count').value) || 0,
-    edd: document.getElementById('r_edd').value || null,
-    deliveryDate: document.getElementById('r_delivery_date').value || null,
+    // Week number (if weight section enabled)
+    weekNum: (groupSettings.rabbitSections && groupSettings.rabbitSections.weight === true) ? parseInt(document.getElementById('r_weeknum').value) || null : null,
+    // Mating
+    matingDate: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? document.getElementById('r_mating').value || null : null,
+    rabbitsMated: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? parseInt(document.getElementById('r_mated_count').value) || 0 : 0,
+    edd: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? document.getElementById('r_edd').value || null : null,
+    deliveryDate: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? document.getElementById('r_delivery_date').value || null : null,
+    // Litters
     litterEntries: litterEntries,
     litters: litterEntries.reduce((s, e) => s + e.litters, 0),
     newKits: litterEntries.reduce((s, e) => s + e.kits, 0),
-    rabbitsSold: parseInt(document.getElementById('r_sold_d').value) || 0,
-    boughtAdultMale: parseInt(document.getElementById('r_bought_adult_male_d').value) || 0,
-    boughtAdultFemale: parseInt(document.getElementById('r_bought_adult_female_d').value) || 0,
-    boughtWeaners: parseInt(document.getElementById('r_bought_weaners_d').value) || 0,
-    boughtKits: parseInt(document.getElementById('r_bought_kits_d').value) || 0,
+    // Sales
+    rabbitsSold: (groupSettings.rabbitSections && groupSettings.rabbitSections.sales === true) ? parseInt(document.getElementById('r_sold_d').value) || 0 : 0,
+    // Purchases
+    boughtAdultMale: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_adult_male_d').value) || 0 : 0,
+    boughtAdultFemale: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_adult_female_d').value) || 0 : 0,
+    boughtWeaners: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_weaners_d').value) || 0 : 0,
+    boughtKits: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_kits_d').value) || 0 : 0,
+    // Mortality
     deathEntries: deathEntries,
     deaths: deathEntries.reduce((s, e) => s + e.count, 0),
-    cause: document.getElementById('r_cause') ? document.getElementById('r_cause').value : ''
+    cause: (groupSettings.rabbitSections && groupSettings.rabbitSections.mortality !== false) ? (document.getElementById('r_cause') ? document.getElementById('r_cause').value : '') : ''
   };
 
   document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -870,10 +896,8 @@ function backToWorkers() { activeWorker = null; activeFarm = null; show('screen-
 function backToFarm() { activeFarm = null; show('screen-farm'); }
 
 function startOver() {
-  // Reset all form fields and go back to farm selection
   activeFarm = null;
   show('screen-farm');
-  // Optionally clear data – but we keep it simple.
 }
 
 // ---- START ----
