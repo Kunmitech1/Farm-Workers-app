@@ -378,9 +378,26 @@ function pickFarm(farm) {
     document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
     if (farm === 'rabbit') {
       buildRabbitForm();
+    } else if (farm === 'chicken') {
+      // Ensure chicken form is clean
+      resetChickenForm();
     }
     show('screen-log');
   }, 200);
+}
+
+// ---- RESET CHICKEN FORM ----
+function resetChickenForm() {
+  ['c_birds', 'c_crates', 'c_revenue', 'c_cause'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['c_good', 'c_cracked', 'c_shelless', 'c_broken', 'c_deaths'].forEach(id => {
+    const hidden = document.getElementById(id);
+    if (hidden) hidden.value = 0;
+    const display = document.getElementById(id + '_d');
+    if (display) display.value = 0;
+  });
 }
 
 // ---- BUILD RABBIT FORM ----
@@ -684,6 +701,8 @@ function submitLog(farm) {
     document.getElementById('loadingOverlay').classList.remove('hidden');
     db.ref('logs').push(log).then(() => {
       lastReceipt = log;
+      // Reset chicken form immediately after successful submission
+      resetChickenForm();
       showReceipt(log);
     }).finally(() => {
       document.getElementById('loadingOverlay').classList.add('hidden');
@@ -692,7 +711,6 @@ function submitLog(farm) {
   }
 
   // ---- RABBIT SUBMISSION ----
-  // Check if animals section is enabled (should be, but just in case)
   if (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) {
     if (!document.getElementById('r_male').value) { alert('Enter number of males'); return; }
     if (!document.getElementById('r_female').value) { alert('Enter number of females'); return; }
@@ -700,7 +718,6 @@ function submitLog(farm) {
     if (!document.getElementById('r_kits').value) { alert('Enter number of kits'); return; }
   }
 
-  // Only save feed/weight data if those sections exist and are rendered
   if (groupSettings.rabbitSections && groupSettings.rabbitSections.feed === true) {
     saveFeedTreatmentData();
   }
@@ -708,7 +725,6 @@ function submitLog(farm) {
     saveWeightTreatmentData();
   }
 
-  // Build treatment data only if feed or weight sections are enabled
   let treatmentData = [];
   if (groupSettings.rabbitSections && (groupSettings.rabbitSections.feed === true || groupSettings.rabbitSections.weight === true)) {
     treatments.forEach(t => {
@@ -731,7 +747,6 @@ function submitLog(farm) {
     });
   }
 
-  // Collect litter entries only if section enabled
   let litterEntries = [];
   if (groupSettings.rabbitSections && groupSettings.rabbitSections.litters === true) {
     document.querySelectorAll('#litterEntries .entry-row').forEach(row => {
@@ -742,7 +757,6 @@ function submitLog(farm) {
     });
   }
 
-  // Collect death entries only if section enabled
   let deathEntries = [];
   if (groupSettings.rabbitSections && groupSettings.rabbitSections.mortality !== false) {
     document.querySelectorAll('#deathEntries .entry-row').forEach(row => {
@@ -753,7 +767,6 @@ function submitLog(farm) {
     });
   }
 
-  // Build the log object – only include fields that are present
   const log = {
     id: 'L' + Date.now(),
     date: new Date().toISOString(),
@@ -762,35 +775,27 @@ function submitLog(farm) {
     groupName: activeGroup.name,
     workerId: activeWorker.id,
     workerName: activeWorker.name,
-    // Animals
     rMale: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_male').value) || 0 : 0,
     rFemale: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_female').value) || 0 : 0,
     rWeaners: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_weaners').value) || 0 : 0,
     rKits: (groupSettings.rabbitSections && groupSettings.rabbitSections.animals !== false) ? parseInt(document.getElementById('r_kits').value) || 0 : 0,
-    // Feed & Weight
     feedType: (groupSettings.rabbitSections && groupSettings.rabbitSections.feed === true) ? document.getElementById('r_feedtype').value : '',
     feedTreatment: (groupSettings.rabbitSections && groupSettings.rabbitSections.feed === true) ? selectedFeedTreatment : '',
     weightTreatment: (groupSettings.rabbitSections && groupSettings.rabbitSections.weight === true) ? selectedWeightTreatment : '',
     treatmentData: treatmentData,
-    // Week number (if weight section enabled)
     weekNum: (groupSettings.rabbitSections && groupSettings.rabbitSections.weight === true) ? parseInt(document.getElementById('r_weeknum').value) || null : null,
-    // Mating
     matingDate: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? document.getElementById('r_mating').value || null : null,
     rabbitsMated: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? parseInt(document.getElementById('r_mated_count').value) || 0 : 0,
     edd: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? document.getElementById('r_edd').value || null : null,
     deliveryDate: (groupSettings.rabbitSections && groupSettings.rabbitSections.mating === true) ? document.getElementById('r_delivery_date').value || null : null,
-    // Litters
     litterEntries: litterEntries,
     litters: litterEntries.reduce((s, e) => s + e.litters, 0),
     newKits: litterEntries.reduce((s, e) => s + e.kits, 0),
-    // Sales
     rabbitsSold: (groupSettings.rabbitSections && groupSettings.rabbitSections.sales === true) ? parseInt(document.getElementById('r_sold_d').value) || 0 : 0,
-    // Purchases
     boughtAdultMale: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_adult_male_d').value) || 0 : 0,
     boughtAdultFemale: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_adult_female_d').value) || 0 : 0,
     boughtWeaners: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_weaners_d').value) || 0 : 0,
     boughtKits: (groupSettings.rabbitSections && groupSettings.rabbitSections.purchases === true) ? parseInt(document.getElementById('r_bought_kits_d').value) || 0 : 0,
-    // Mortality
     deathEntries: deathEntries,
     deaths: deathEntries.reduce((s, e) => s + e.count, 0),
     cause: (groupSettings.rabbitSections && groupSettings.rabbitSections.mortality !== false) ? (document.getElementById('r_cause') ? document.getElementById('r_cause').value : '') : ''
@@ -799,10 +804,45 @@ function submitLog(farm) {
   document.getElementById('loadingOverlay').classList.remove('hidden');
   db.ref('logs').push(log).then(() => {
     lastReceipt = log;
+    // Reset rabbit data after submission
+    resetRabbitForm();
     showReceipt(log);
   }).finally(() => {
     document.getElementById('loadingOverlay').classList.add('hidden');
   });
+}
+
+// ---- RESET RABBIT FORM ----
+function resetRabbitForm() {
+  // Clear animals
+  ['r_male', 'r_female', 'r_weaners', 'r_kits'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // Clear feed and weight data
+  feedWaterData = {};
+  weightData = {};
+  selectedFeedTreatment = 'control';
+  selectedWeightTreatment = 'control';
+  // Clear mating
+  ['r_mating', 'r_mated_count', 'r_edd', 'r_delivery_date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // Clear sales and purchases (steppers)
+  ['r_sold', 'r_bought_adult_male', 'r_bought_adult_female', 'r_bought_weaners', 'r_bought_kits'].forEach(id => {
+    const hidden = document.getElementById(id);
+    if (hidden) hidden.value = 0;
+    const display = document.getElementById(id + '_d');
+    if (display) display.value = 0;
+  });
+  // Clear litter and death entries
+  const litterContainer = document.getElementById('litterEntries');
+  if (litterContainer) litterContainer.innerHTML = '';
+  const deathContainer = document.getElementById('deathEntries');
+  if (deathContainer) deathContainer.innerHTML = '';
+  addLitterEntry();
+  addDeathEntry();
 }
 
 // ---- SHOW RECEIPT ----
@@ -896,6 +936,9 @@ function backToWorkers() { activeWorker = null; activeFarm = null; show('screen-
 function backToFarm() { activeFarm = null; show('screen-farm'); }
 
 function startOver() {
+  // Reset chicken form and go back to farm selection
+  resetChickenForm();
+  resetRabbitForm();
   activeFarm = null;
   show('screen-farm');
 }
