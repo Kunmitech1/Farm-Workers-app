@@ -91,6 +91,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .entry-row .feed-input{flex:2;min-width:80px}
 @media(max-width:420px){.entry-row{flex-wrap:wrap}.entry-row .feed-input{flex:1 1 100%}.feed-row-label{width:100%;text-align:left;padding-bottom:2px}}
 .treatment-chip{padding:6px 14px;font-size:0.72rem}
+.date-banner{background:#fffbeb;border:2px solid #fde68a;border-radius:14px;padding:12px 16px;margin:0 18px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.date-banner-icon{font-size:1.5rem}
+.date-banner-text{flex:1;min-width:160px}
+.date-banner-title{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.07em;color:#92400e;font-weight:700;margin-bottom:2px}
+.date-banner-sub{font-size:0.8rem;color:var(--text);font-weight:600}
+.date-banner input[type="date"]{padding:8px 10px;border:2px solid #fde68a;border-radius:10px;font-size:0.85rem;font-family:inherit;background:#fff;font-weight:600}
+.date-banner .today-btn{background:var(--green);color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:0.75rem;font-weight:700;cursor:pointer}
+.past-date-tag{display:inline-block;background:#fef3c7;color:#92400e;font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -150,6 +158,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="screen-log" class="hidden">
   <div style="padding:10px 18px 0"><button class="back-btn" onclick="backToFarm()">← Change Farm</button></div>
   <div id="workerBanner" style="margin:0 18px;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:14px;padding:14px 16px;font-weight:700;font-size:0.9rem"></div>
+
+  <!-- DATE SELECTOR BANNER (for logging past days) -->
+  <div class="date-banner">
+    <div class="date-banner-icon">📅</div>
+    <div class="date-banner-text">
+      <div class="date-banner-title">Logging For</div>
+      <div class="date-banner-sub" id="dateBannerLabel">Today</div>
+    </div>
+    <input type="date" id="logDate" onchange="onDateChange()">
+    <button class="today-btn" onclick="setToday()">Today</button>
+  </div>
 
   <!-- CHICKEN FORM -->
   <div id="form-chicken" class="hidden">
@@ -224,6 +243,7 @@ const db = firebase.database();
 var activeGroup = null, activeWorker = null, activeFarm = null;
 var lastReceipt = null;
 var groupSettings = null;
+var selectedLogDate = new Date(); // which day the log is for
 
 // ---- TREATMENT DEFINITION ----
 const treatmentConfigs = [
@@ -248,11 +268,140 @@ let weightData = {};
 let selectedFeedTreatment = 'control';
 let selectedWeightTreatment = 'control';
 
+// ---- DATE HELPERS ----
+function toDateInputValue(d) {
+  // Returns YYYY-MM-DD in local time (not UTC)
+  const dt = new Date(d);
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isToday(d) {
+  const t = new Date();
+  return d.getFullYear() === t.getFullYear() &&
+         d.getMonth() === t.getMonth() &&
+         d.getDate() === t.getDate();
+}
+
+function formatDateLong(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateShort(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function updateDateBanner() {
+  const label = document.getElementById('dateBannerLabel');
+  if (!label) return;
+  const banner = label.closest('.date-banner');
+  const isTodaySelected = isToday(selectedLogDate);
+  if (isTodaySelected) {
+    label.innerHTML = 'Today';
+    label.classList.remove('past-date-tag');
+    if (banner) banner.style.borderColor = '#bbf7d0', banner.style.background = '#f0fdf4';
+    if (banner) banner.querySelector('.date-banner-title').style.color = '#166534';
+  } else {
+    label.innerHTML = formatDateLong(selectedLogDate) + ' <span class="past-date-tag">Past Date</span>';
+    if (banner) banner.style.borderColor = '#fde68a', banner.style.background = '#fffbeb';
+    if (banner) banner.querySelector('.date-banner-title').style.color = '#92400e';
+  }
+  const input = document.getElementById('logDate');
+  if (input) input.value = toDateInputValue(selectedLogDate);
+}
+
+function onDateChange() {
+  const input = document.getElementById('logDate');
+  if (!input || !input.value) return;
+  // Parse YYYY-MM-DD as local date, not UTC
+  const parts = input.value.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const picked = new Date(year, month, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (picked > today) {
+    alert('You cannot log data for a future date.');
+    input.value = toDateInputValue(selectedLogDate);
+    return;
+  }
+
+  selectedLogDate = picked;
+  updateDateBanner();
+  // Reload existing data for the selected date if we're in the form
+  reloadDataForSelectedDate();
+}
+
+function setToday() {
+  selectedLogDate = new Date();
+  updateDateBanner();
+  reloadDataForSelectedDate();
+}
+
+// Check if a log already exists for this worker + date + farm
+async function checkExistingLog(farm) {
+  const targetDateStr = toDateInputValue(selectedLogDate);
+  const snap = await db.ref('logs').once('value');
+  const logs = snap.val() ? Object.values(snap.val()) : [];
+  return logs.find(l =>
+    l.workerId === activeWorker.id &&
+    l.groupId === activeGroup.id &&
+    l.farm === farm &&
+    toDateInputValue(new Date(l.date)) === targetDateStr
+  );
+}
+
+// Warn worker if a log already exists for the chosen date
+async function warnIfExisting(farm) {
+  const existing = await checkExistingLog(farm);
+  if (existing) {
+    const confirmed = confirm(
+      `⚠️ You already submitted a ${farm} log for ${formatDateShort(selectedLogDate)}.\n\n` +
+      `Do you want to submit another one?`
+    );
+    return confirmed;
+  }
+  return true;
+}
+
+// Load existing data for this date into the form (if exists)
+async function reloadDataForSelectedDate() {
+  if (!activeWorker || !activeGroup || !activeFarm) return;
+  const existing = await checkExistingLog(activeFarm);
+  if (!existing) {
+    // No existing log – clear the form
+    if (activeFarm === 'chicken') resetChickenForm();
+    else if (activeFarm === 'rabbit') resetRabbitForm();
+    return;
+  }
+  // Populate the form with existing data
+  if (activeFarm === 'chicken') {
+    document.getElementById('c_birds').value = existing.birds || '';
+    document.getElementById('c_good_d').value = existing.eggsGood || 0;
+    document.getElementById('c_good').value = existing.eggsGood || 0;
+    document.getElementById('c_cracked_d').value = existing.eggsCracked || 0;
+    document.getElementById('c_cracked').value = existing.eggsCracked || 0;
+    document.getElementById('c_shelless_d').value = existing.eggsShelless || 0;
+    document.getElementById('c_shelless').value = existing.eggsShelless || 0;
+    document.getElementById('c_broken_d').value = existing.eggsBroken || 0;
+    document.getElementById('c_broken').value = existing.eggsBroken || 0;
+    document.getElementById('c_crates').value = existing.cratesSold || '';
+    document.getElementById('c_revenue').value = existing.cratesRevenue || '';
+    document.getElementById('c_deaths_d').value = existing.deaths || 0;
+    document.getElementById('c_deaths').value = existing.deaths || 0;
+    document.getElementById('c_cause').value = existing.cause || '';
+  }
+  // For rabbit, we don't auto-populate complex treatment data – user can re-enter
+}
+
 // ---- INIT ----
 function init() {
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   db.ref('groups').on('value', snap => {
-    console.log('Groups changed, refreshing list');
     renderGroupList();
   });
   db.ref('workers').on('value', snap => {
@@ -266,6 +415,7 @@ function init() {
   renderGroupList();
   addLitterEntry();
   addDeathEntry();
+  updateDateBanner();
 }
 
 function refreshGroups() {
@@ -283,7 +433,6 @@ function refreshGroups() {
 function renderGroupList() {
   db.ref('groups').once('value').then(snap => {
     const groupsData = snap.val();
-    console.log('Groups data:', groupsData);
     const groups = groupsData ? Object.values(groupsData) : [];
     const list = document.getElementById('groupList');
     const none = document.getElementById('noGroups');
@@ -372,16 +521,18 @@ function pickFarm(farm) {
   activeFarm = farm;
   document.querySelectorAll('.farm-card').forEach(c => c.classList.remove('sel'));
   document.getElementById('fc-' + farm).classList.add('sel');
-  setTimeout(() => {
+  setTimeout(async () => {
     document.getElementById('workerBanner').textContent = '👤 ' + activeWorker.name + ' · ' + (farm === 'chicken' ? '🐔 Chicken' : '🐇 Rabbit') + ' · ' + activeGroup.name;
     document.getElementById('form-chicken').classList.toggle('hidden', farm !== 'chicken');
     document.getElementById('form-rabbit').classList.toggle('hidden', farm !== 'rabbit');
     if (farm === 'rabbit') {
       buildRabbitForm();
     } else if (farm === 'chicken') {
-      // Ensure chicken form is clean
       resetChickenForm();
     }
+    updateDateBanner();
+    // Load existing data for the selected date
+    await reloadDataForSelectedDate();
     show('screen-log');
   }, 200);
 }
@@ -673,16 +824,31 @@ function adj(id, delta) {
 }
 
 // ---- SUBMIT LOG ----
-function submitLog(farm) {
+async function submitLog(farm) {
+  // Check if a log already exists for the selected date
+  const proceed = await warnIfExisting(farm);
+  if (!proceed) return;
+
+  // Use the selected date but keep current time
+  const now = new Date();
+  const logDate = new Date(
+    selectedLogDate.getFullYear(),
+    selectedLogDate.getMonth(),
+    selectedLogDate.getDate(),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds()
+  );
+
   if (farm === 'chicken') {
-    // ---- CHICKEN SUBMISSION ----
     if (!document.getElementById('c_birds').value) {
       alert('Enter number of birds');
       return;
     }
     const log = {
       id: 'L' + Date.now(),
-      date: new Date().toISOString(),
+      date: logDate.toISOString(),
+      logDateOnly: toDateInputValue(selectedLogDate),
       farm: 'chicken',
       groupId: activeGroup.id,
       groupName: activeGroup.name,
@@ -701,7 +867,6 @@ function submitLog(farm) {
     document.getElementById('loadingOverlay').classList.remove('hidden');
     db.ref('logs').push(log).then(() => {
       lastReceipt = log;
-      // Reset chicken form immediately after successful submission
       resetChickenForm();
       showReceipt(log);
     }).finally(() => {
@@ -769,7 +934,8 @@ function submitLog(farm) {
 
   const log = {
     id: 'L' + Date.now(),
-    date: new Date().toISOString(),
+    date: logDate.toISOString(),
+    logDateOnly: toDateInputValue(selectedLogDate),
     farm: 'rabbit',
     groupId: activeGroup.id,
     groupName: activeGroup.name,
@@ -804,7 +970,6 @@ function submitLog(farm) {
   document.getElementById('loadingOverlay').classList.remove('hidden');
   db.ref('logs').push(log).then(() => {
     lastReceipt = log;
-    // Reset rabbit data after submission
     resetRabbitForm();
     showReceipt(log);
   }).finally(() => {
@@ -814,29 +979,24 @@ function submitLog(farm) {
 
 // ---- RESET RABBIT FORM ----
 function resetRabbitForm() {
-  // Clear animals
   ['r_male', 'r_female', 'r_weaners', 'r_kits'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  // Clear feed and weight data
   feedWaterData = {};
   weightData = {};
   selectedFeedTreatment = 'control';
   selectedWeightTreatment = 'control';
-  // Clear mating
   ['r_mating', 'r_mated_count', 'r_edd', 'r_delivery_date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  // Clear sales and purchases (steppers)
   ['r_sold', 'r_bought_adult_male', 'r_bought_adult_female', 'r_bought_weaners', 'r_bought_kits'].forEach(id => {
     const hidden = document.getElementById(id);
     if (hidden) hidden.value = 0;
     const display = document.getElementById(id + '_d');
     if (display) display.value = 0;
   });
-  // Clear litter and death entries
   const litterContainer = document.getElementById('litterEntries');
   if (litterContainer) litterContainer.innerHTML = '';
   const deathContainer = document.getElementById('deathEntries');
@@ -851,12 +1011,20 @@ function showReceipt(log) {
   const dateStr = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const isC = log.farm === 'chicken';
+  const wasPastDate = log.logDateOnly && log.logDateOnly !== toDateInputValue(new Date());
   let body = '';
 
   const rr = (label, val, cls) => `<div class="receipt-row"><span class="receipt-label">${label}</span><span class="receipt-val ${cls || ''}">${val}</span></div>`;
   const rg = (title, rows) => `<div class="receipt-group"><div class="receipt-group-title">${title}</div>${rows}</div>`;
 
-  body += rg('📅 Info', rr('Date', dateStr) + rr('Time', timeStr) + rr('Group', log.groupName) + rr('Worker', log.workerName) + rr('Farm', isC ? 'Chicken' : 'Rabbit') + rr('Entry ID', log.id));
+  body += rg('📅 Info',
+    rr('Log Date', dateStr + (wasPastDate ? ' ⏪' : '')) +
+    rr('Submitted', timeStr) +
+    rr('Group', log.groupName) +
+    rr('Worker', log.workerName) +
+    rr('Farm', isC ? 'Chicken' : 'Rabbit') +
+    rr('Entry ID', log.id)
+  );
 
   if (isC) {
     body += rg('🐔 Production', 
@@ -915,8 +1083,12 @@ function showReceipt(log) {
     }
   }
 
+  const headerSub = wasPastDate
+    ? `⏪ Past entry · ${log.groupName} · ${log.workerName}`
+    : `${log.groupName} · ${log.workerName}`;
+
   document.getElementById('receiptCard').innerHTML =
-    `<div class="receipt-header"><div class="receipt-header-icon">${isC ? '🐔' : '🐇'}</div><h2>Log Submitted</h2><div class="receipt-header-sub">${log.groupName} · ${log.workerName}</div></div>
+    `<div class="receipt-header"><div class="receipt-header-icon">${isC ? '🐔' : '🐇'}</div><h2>Log Submitted</h2><div class="receipt-header-sub">${headerSub}</div></div>
     <div class="receipt-body">${body}</div>
     <div class="receipt-footer"><div class="receipt-stamp">✅ Saved to Database</div></div>`;
   show('screen-receipt');
@@ -936,10 +1108,12 @@ function backToWorkers() { activeWorker = null; activeFarm = null; show('screen-
 function backToFarm() { activeFarm = null; show('screen-farm'); }
 
 function startOver() {
-  // Reset chicken form and go back to farm selection
   resetChickenForm();
   resetRabbitForm();
   activeFarm = null;
+  // Reset the date to today
+  selectedLogDate = new Date();
+  updateDateBanner();
   show('screen-farm');
 }
 
